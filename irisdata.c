@@ -18,31 +18,31 @@ double getIrisClass(char* word){
 }
 
 //Read iris.data file ans set values in a double array with 5 columns: Sepal.Length, Sepal.Width, Petal.Length, Petal.Width, Class
-double** getIrisData(somConfig *config){
+dataVector* getIrisData(somConfig *config){
    FILE * fp;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
-    double ** data = (double**)malloc(sizeof(double*));
+    dataVector * data = (dataVector*)malloc(sizeof(dataVector));
     fp = fopen("iris.data", "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
     int ln = 0;
     while ((read = getline(&line, &len, fp)) != -1) {
         if(read>1){
-            data = (double**) realloc(data, (ln+1) * sizeof(double*));
+            data = (dataVector*) realloc(data, (ln+1) * sizeof(dataVector));
             char delim[]=",";
             int column = 0;
             char *ptr = strtok(line, delim);
-            data[ln] = (double*)malloc(5 * sizeof (double));
+            data[ln].v = (double*)malloc(5 * sizeof (double));
             while(ptr != NULL && column < 5)
             {
                 if(column < 4){
-                    data[ln][column] = strtod(ptr, NULL);
+                    data[ln].v[column] = strtod(ptr, NULL);
                 }
                 else if(column == 4){
                     ptr = strtok(ptr, "\n");
-                    data[ln][column] = getIrisClass(ptr);
+                    data[ln].v[column] = getIrisClass(ptr);
                 }
                 ptr = strtok(NULL, delim);
                 column++;
