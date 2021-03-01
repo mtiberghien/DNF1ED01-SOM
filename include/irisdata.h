@@ -1,2 +1,2 @@
 #include "common.h"
-void * getIrisData(somConfig *config);
+double** getIrisData(somConfig *config);

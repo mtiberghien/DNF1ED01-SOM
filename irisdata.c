@@ -18,7 +18,7 @@ double getIrisClass(char* word){
 }
 
 //Read iris.data file ans set values in a double array with 5 columns: Sepal.Length, Sepal.Width, Petal.Length, Petal.Width, Class
-void * getIrisData(somConfig *config){
+double** getIrisData(somConfig *config){
    FILE * fp;
     char * line = NULL;
     size_t len = 0;
