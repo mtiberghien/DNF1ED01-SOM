@@ -58,7 +58,7 @@ dataVector* getIrisData(somConfig *config){
     if (line)
         free(line);
     config->n=ln;
-    config->p=5;   
+    config->p=4; 
     return data;
 }
 

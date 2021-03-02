@@ -1,6 +1,7 @@
 #include "include/som.h"
 #include <math.h>
 #include <stdlib.h>
+
 // Return min between 2 doubles
 double min(double x, double y)
 {
@@ -20,17 +21,18 @@ double distance_function(double *v, double *w, int p)
     return sqrt(sum);
 }
 //Return the index of the neuron closest to a entry vector using the distance_function
-int fi_function(dataVector v, somNeuron *weights, int n, int p)
+int fi_function(dataVector v, somNeuron *weights, int nw, int p)
 {
     int result = -1;
     double minValue = __DBL_MAX__;
-    for(int i = 0; i<n; i++){
+    for(int i = 0; i<nw; i++){
         double distance = distance_function(v.v, weights[i].w, p);
         minValue = min(distance, minValue);
         if(distance == minValue){
             result = i;
         }
     }
+    return result;
 }
 //Return a value between 0 and 1 according to the distance between the winner neuron and another neuron and a neighborhood factor using p parameters
 double neighborhood_function(somNeuron winner, somNeuron r, int p, double sigma)
@@ -42,11 +44,12 @@ double neighborhood_function(somNeuron winner, somNeuron r, int p, double sigma)
 //If no parameter has been updated significantly return 0, 1 otherwise
 short updateNeuron(dataVector v, somNeuron winner, somNeuron r, int p, double epsilon, double sigma){
     short flagChange = 0;
+    double triggerChange = 0.01;
     double h = neighborhood_function(winner, r, p, sigma);
     for(int i=0;i<p;i++){
         double delta = epsilon * h *(v.v[i] - r.w[i]);
         r.w[i] += delta;
-        flagChange = delta > 0.001 ? 1: flagChange;
+        flagChange = delta > triggerChange || delta < -triggerChange ? 1: flagChange;
     }
     return flagChange;
 }
@@ -55,20 +58,21 @@ short updateNeuron(dataVector v, somNeuron winner, somNeuron r, int p, double ep
 short updateNeurons(dataVector v, somNeuron winner, somNeuron  *weights, somConfig config)
 {
     short flagChange = 0;
-    for(int i=0;i<config.n;i++){
+    for(int i=0;i<config.nw;i++){
         if(updateNeuron(v, winner, weights[i], config.p, config.epsilon, config.sigma)){
             flagChange = 1;
         };
     }
     return flagChange;
 }
+
 //Return a random value between a boundary
 double getRandom(dataBoundary boundary){
     return (((double)rand()/RAND_MAX)*(boundary.max - boundary.min)) + boundary.min;
 }
 //Initialize SOM weights with random values based on parameters boundaries
 void initialize(somNeuron *weights, somConfig config, dataBoundary *boundaries){
-    for(int i=0;i<config.n; i++){
+    for(int i=0;i<config.nw; i++){
         weights[i].w = (double*)malloc(config.p * sizeof(double));
         for(int j=0;j<config.p;j++){
             weights[i].w[j]= getRandom(boundaries[j]);
@@ -91,21 +95,25 @@ void initializeBoundaries(dataBoundary *boundaries, dataVector *data, somConfig 
 //Find the winner neuron for an input vector v and upated weights using config parameters
 short learn(dataVector v, somNeuron * weights, somConfig config)
 {
-    somNeuron winner = weights[fi_function(v, weights, config.n, config.p)];
+    int iWinner = fi_function(v, weights, config.nw, config.p);
+    somNeuron winner = weights[iWinner];
     return updateNeurons(v, winner, weights, config);
 }
 //Get the neuron weight index that activates with an input vector
-int predict(dataVector v, somNeuron * weights, int n, int p)
+int predict(dataVector v, somNeuron * weights, somConfig config)
 {
-    return fi_function(v, weights, n, p);
+    return fi_function(v, weights, config.nw, config.p);
 }
 //Get the weights neurons initialized using an input dataset and a som settings
-somNeuron * getsom(dataVector* data, somConfig config)
+somNeuron * getsom(dataVector* data, somConfig *config)
 {
-    dataBoundary boundaries[config.p];
-    initializeBoundaries(boundaries, data, config);
-    somNeuron *weights = (somNeuron*)malloc(config.n * sizeof(somNeuron));
-    initialize(weights, config, boundaries);
+    if(config->nw <=0){
+        config->nw = config->n;
+    }
+    dataBoundary boundaries[config->p];
+    initializeBoundaries(boundaries, data, *config);
+    somNeuron *weights = (somNeuron*)malloc(config->nw * sizeof(somNeuron));
+    initialize(weights, *config, boundaries);
     return weights;
 }
 

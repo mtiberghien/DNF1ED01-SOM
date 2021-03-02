@@ -15,6 +15,8 @@ typedef struct somConfig{
     double epsilon;
     //Neighborhood factor
     double sigma;
+    //Number of weights
+    int nw;
 } somConfig;
 
 typedef struct dataBoundary{
