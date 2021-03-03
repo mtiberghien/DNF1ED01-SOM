@@ -5,6 +5,11 @@ typedef struct dataVector{
     double *v;
 } dataVector;
 
+typedef struct neuronLocation{
+    int x;
+    int y;
+} neuronLocation;
+
 //SOM settings
 typedef struct somConfig{
     //Number of entries
@@ -12,11 +17,14 @@ typedef struct somConfig{
     //Number of parameters
     int p;
     //Learning factor
-    double epsilon;
+    double alpha;
     //Neighborhood factor
     double sigma;
     //Number of weights
     int nw;
+    int map_r;
+    int map_c;
+    int radius;
 } somConfig;
 
 typedef struct dataBoundary{

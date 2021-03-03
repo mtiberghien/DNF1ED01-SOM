@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "include/irisdata.h"
 #include "include/som.h"
 
-
-void showDataLine(double data[150][5], int lineIndex){
-    printf("%.2f, %.2f, %.2f, %.2f, %.0f\n", data[lineIndex][0], data[lineIndex][1], data[lineIndex][2], data[lineIndex][3], data[lineIndex][4]);
-}
 
 void clear_mem(dataVector *data, somNeuron *weights, somConfig config){
     for(int i=0;i<config.n;i++){
@@ -28,39 +25,51 @@ char* getIrisLabel(int index){
         return "          Other:";
 }
 
-int getmaxClassValidationIndex(int classIndex, int validations[][150]){
-    int result = -1;
-    int maxValue = 0;
-    for(int i=0;i<3;i++){
-       int val = validations[i][classIndex];
-       if(val>maxValue){
-           result = i;
-           maxValue = val;
-       }
+char* getTerminalColorCode(int index){
+    switch(index){
+        //red
+        case 1: return ";31m";
+        //yellow
+        case 2: return ";33m";
+        //blue
+        case 3: return ";34m";
     }
-    return result;
+    //default
+    return "m";
 }
-
 
 int main()
 {
     somConfig config;
-    config.epsilon = 0.05;
-    config.sigma = 0.3;
+    config.alpha = 0.7;
+    config.sigma = 0.8;
     dataVector *data = getIrisData(&config);
     somNeuron *weights = getsom(data, &config);
-    int episodes = 10;
-    for(int i=0;i<episodes;i++){
-        printf("Learning episode: %d\n", i+1);
-        for(int j=0;j<config.n;j++){
-        int ivector = (((double)rand()/RAND_MAX)*(config.nw));
-        learn(data[ivector], weights, config);
-        }
+    printf("SOM Settings:\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %.2f\n%19s: %.2f\n\n", "Entries", config.n,
+         "Neurons", config.nw ,"Map rows", config.map_r, "Map columns", config.map_c, "Radius", config.radius,
+         "Learning rate", config.alpha, "Neighborhood factor", config.sigma);
+    int episodes = 15;
+    int vectorsToPropose[config.n];
+    for(int i=0;i<config.n;i++){
+        vectorsToPropose[i]=i;
     }
 
-    double predictions[config.n];
+    for(int i=0;i<episodes;i++){
+        for(int j=config.n-1;j>=0;j--){
+        int ivector = (((double)rand()/RAND_MAX)*(j));
+        learn(data[vectorsToPropose[ivector]], weights, config);
+        vectorsToPropose[ivector] = vectorsToPropose[j];
+        }
+        config.alpha*=0.99;
+        config.sigma*=0.90;
+    }
+
+    int predictions[config.n];
+    for(int i=0;i<config.n;i++){
+           predictions[i]=0;
+        }
     int scores[config.nw];
-     for(int i=0;i<config.nw;i++){
+    for(int i=0;i<config.nw;i++){
            scores[i]=0;
         }
     for(int i=0;i<config.n;i++){
@@ -90,7 +99,7 @@ int main()
         printf("%s",getIrisLabel(i));
         for(int j=0;j<config.nw;j++){
             for(int k=0;k<config.n;k++){
-                if(data[k].v[4]== i && predictions[k]==j){
+                if(data[k].v[config.p]== i && predictions[k]==j){
                     validations[i][j]+=1;
                 }
             }
@@ -104,14 +113,41 @@ int main()
         int maxClassSum = 0;
         printf("%s", getIrisLabel(i));
         for(int j=0;j<config.nw;j++){
-            if(getmaxClassValidationIndex(j, validations) == i){
+            int result = -1;
+            int maxValue = 0;
+            for(int i=0;i<3;i++){
+            int val = validations[i][j];
+            if(val>maxValue){
+                result = i;
+                maxValue = val;
+            }
+            }
+            if(result == i){
                     maxClassSum+=validations[i][j];
                 }
         }
         printf("percentage classified (combining winning subgroups):%.2f%%\n", maxClassSum*100/50.0);
     }
-                    
+    int map[config.map_r][config.map_c];
+    for(int i=0;i<config.map_r;i++){
+        for(int j=0;j<config.map_c;j++){
+            map[i][j]=0;
+        }
+    }
+    for(int i=0;i<config.n;i++){
+        int real_class = data[i].v[config.p];
+        int neuron_index = predictions[i];
+        map[neuron_index/config.map_c][neuron_index%config.map_c] = real_class+1;
+    }
 
+    for(int i=0;i<config.map_r;i++){
+        for(int j=0;j<config.map_c;j++){
+            printf("\033[0%s", getTerminalColorCode(map[i][j]));
+            printf("%d ", map[i][j]);
+            printf("\033[0m");
+        }
+        printf("\n");
+    }
 
     clear_mem(data, weights, config);
 }

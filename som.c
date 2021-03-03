@@ -1,4 +1,5 @@
 #include "include/som.h"
+#include "include/common.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -11,6 +12,16 @@ double min(double x, double y)
 double max(double x, double y){
     return y > x ? y : x;
 }
+
+void setLocationFromIndex(int index, somConfig config, neuronLocation* location){
+    location->y = index/config.map_c;
+    location->x = index%config.map_c;
+}
+
+int getIndexFromLocation(neuronLocation location, somConfig config){
+    return (config.map_c * location.y) + location.x;
+}
+
 //Calculate the euclidian distance between 2 vectors using p dimensions
 double distance_function(double *v, double *w, int p)
 {
@@ -23,31 +34,44 @@ double distance_function(double *v, double *w, int p)
 //Return the index of the neuron closest to a entry vector using the distance_function
 int fi_function(dataVector v, somNeuron *weights, int nw, int p)
 {
-    int result = -1;
+    int *results = malloc(sizeof(int));
+    int count = 1;
     double minValue = __DBL_MAX__;
     for(int i = 0; i<nw; i++){
         double distance = distance_function(v.v, weights[i].w, p);
-        minValue = min(distance, minValue);
-        if(distance == minValue){
-            result = i;
+        if(distance<minValue){
+            results[count-1]= i;
+            minValue = distance;
+        }
+        else if(distance == minValue){
+            results = realloc(results, ++count*sizeof(int));
+            results[count-1]=i;
         }
     }
+    int selectedIndex = count > 1 ? (rand()*1.0/RAND_MAX)*(count) : 0;
+    int result = results[selectedIndex];
+    free(results);
     return result;
 }
+
+
 //Return a value between 0 and 1 according to the distance between the winner neuron and another neuron and a neighborhood factor using p parameters
-double neighborhood_function(somNeuron winner, somNeuron r, int p, double sigma)
+double neighborhood_function(neuronLocation winner, neuronLocation r, int p, double sigma)
 {
-    return exp(-(distance_function(winner.w, r.w, p)/pow(sigma, 2)));
+    double wp[2]={winner.x, winner.y};
+    double rp[2]={r.x, r.y};
+    return exp(-(distance_function(wp, rp, 2)/pow(sigma, 2)));
 }
 //Update the weight vector of a neuron adding for each parameter the difference between entry vector parameter and current vector parameter
 //The difference is multiplied by a learning factor (epsilon) and a the result (value between 0 and 1) of neighborhood function
 //If no parameter has been updated significantly return 0, 1 otherwise
-short updateNeuron(dataVector v, somNeuron winner, somNeuron r, int p, double epsilon, double sigma){
+short updateNeuron(dataVector v, neuronLocation lwinner, neuronLocation lr, somNeuron* weights, somConfig config){
     short flagChange = 0;
     double triggerChange = 0.01;
-    double h = neighborhood_function(winner, r, p, sigma);
-    for(int i=0;i<p;i++){
-        double delta = epsilon * h *(v.v[i] - r.w[i]);
+    double h = neighborhood_function(lwinner, lr, config.p, config.sigma);
+    somNeuron r = weights[getIndexFromLocation(lr, config)];
+    for(int i=0;i<config.p;i++){
+        double delta = config.alpha * h *(v.v[i] - r.w[i]);
         r.w[i] += delta;
         flagChange = delta > triggerChange || delta < -triggerChange ? 1: flagChange;
     }
@@ -55,12 +79,21 @@ short updateNeuron(dataVector v, somNeuron winner, somNeuron r, int p, double ep
 }
 //When a winner neuron has been determined for and entry vector, all the neurons are updated the function will return 0 if no neuron has been modified significantly
 //1 otherwise
-short updateNeurons(dataVector v, somNeuron winner, somNeuron  *weights, somConfig config)
+short updateNeurons(dataVector v, int iWinner, somNeuron  *weights, somConfig config)
 {
     short flagChange = 0;
-    for(int i=0;i<config.nw;i++){
-        if(updateNeuron(v, winner, weights[i], config.p, config.epsilon, config.sigma)){
-            flagChange = 1;
+    neuronLocation winnerLocation;
+    setLocationFromIndex(iWinner, config, &winnerLocation);
+    int startx = max(0, winnerLocation.x - config.radius);
+    int endx = min(config.map_c - 1, winnerLocation.x + config.radius);
+    int starty = max(0, winnerLocation.y - config.radius);
+    int endy = min(config.map_r - 1, winnerLocation.y + config.radius);
+    for(int i=starty;i<=endy; i++){
+        for(int j=startx;j<=endx;j++){
+            neuronLocation r = {j,i};
+            if(updateNeuron(v, winnerLocation, r, weights, config)){
+                flagChange = 1;
+            }
         };
     }
     return flagChange;
@@ -96,23 +129,37 @@ void initializeBoundaries(dataBoundary *boundaries, dataVector *data, somConfig 
 short learn(dataVector v, somNeuron * weights, somConfig config)
 {
     int iWinner = fi_function(v, weights, config.nw, config.p);
-    somNeuron winner = weights[iWinner];
-    return updateNeurons(v, winner, weights, config);
+    return updateNeurons(v, iWinner, weights, config);
 }
 //Get the neuron weight index that activates with an input vector
 int predict(dataVector v, somNeuron * weights, somConfig config)
 {
     return fi_function(v, weights, config.nw, config.p);
 }
+
+int setMapSize(somConfig *config){
+    double ratio = 4.0/3;
+    int y = floor(sqrt(config->nw / ratio));
+    y-=config->nw%y;
+    int x = config->nw/y;
+    if(config->nw%(x*y)>0){
+        y+=1;
+    }
+    config->map_r=y;
+    config->map_c=x;
+    config->radius = (y-1)/2;
+}
 //Get the weights neurons initialized using an input dataset and a som settings
-somNeuron * getsom(dataVector* data, somConfig *config)
+somNeuron *getsom(dataVector* data, somConfig *config)
 {
     if(config->nw <=0){
-        config->nw = config->n;
+        config->nw = floor(5 *sqrt(config->n *1.0));
+        config->nw -= config->nw%12;
     }
+    setMapSize(config);
     dataBoundary boundaries[config->p];
     initializeBoundaries(boundaries, data, *config);
-    somNeuron *weights = (somNeuron*)malloc(config->nw * sizeof(somNeuron));
+    somNeuron *weights = (somNeuron*)malloc(config->nw *sizeof(somNeuron));
     initialize(weights, *config, boundaries);
     return weights;
 }
