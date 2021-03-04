@@ -38,6 +38,12 @@ char* getTerminalColorCode(int index){
     return "m";
 }
 
+void initshuffle(int* array, int n){
+    for(int i=0;i<n;i++){
+        array[i] = i;
+    }
+}
+
 int main()
 {
     somConfig config;
@@ -51,12 +57,10 @@ int main()
          "Learning rate", config.alpha, "Neighborhood factor", config.sigma);
     int episodes = 5;
     int vectorsToPropose[config.n];
-    for(int i=0;i<config.n;i++){
-        vectorsToPropose[i]=i;
-    }
     int predictions[config.n];
     int scores[config.nw];
     for(int i=0;i<episodes;i++){
+        initshuffle(vectorsToPropose, config.n);
         long stepId=config.n*i;
         for(int j=config.n-1;j>=0;j--){
         int ivector = (((double)rand()/RAND_MAX)*(j));
@@ -78,7 +82,7 @@ int main()
         }
         config.alpha*=0.99;
         config.sigma*=0.90;
-
+        config.radius*= max(1, config.radius-1);
     }
 
     
