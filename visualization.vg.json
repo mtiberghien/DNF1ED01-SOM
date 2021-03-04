@@ -14,85 +14,6 @@
     {"name": "showneurons", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showlinks", "value": true, "bind": {"input": "checkbox"}}
   ],
-  "marks": [
-    {
-      "type": "text",
-      "encode": {
-        "enter": {
-          "fontSize": {"value": 14},
-          "fontWeight": {"value": "bold"},
-          "xc": {"signal": "width/2"},
-          "align": {"value": "center"},
-          "fill": {"value": "#eee"}
-        },
-        "update": {
-          "text": {
-            "signal": "showgrid ? 'Neuron map':'K-Means step: ' + current_step"
-          }
-        }
-      }
-    },
-    {
-      "type": "symbol",
-      "from": {"data": "iris"},
-      "encode": {
-        "enter": {"stroke": {"value": "#555"}},
-        "update": {
-          "opacity": {"signal": "showrealdata && !showgrid ? 0.5 : 0"},
-          "fill": {"field": "class", "scale": "color"},
-          "xc": {"signal": "datum.pl + datum.pw", "scale": "xscale"},
-          "yc": {"signal": "datum.sl + datum.sw", "scale": "yscale"}
-        }
-      }
-    },
-    {
-      "type": "rule",
-      "from": {"data": "links"},
-      "encode": {
-        "update": {
-          "stroke": {"value": "#bbb"},
-          "strokeWidth": {"value": 0.5},
-          "opacity": {"signal": "showlinks && showneurons ? 1 :0"},
-          "x": [
-            {"test": "showgrid", "field": "x", "scale": "xscale-grid"},
-            {"field": "s_x", "scale": "xscale"}
-          ],
-          "y": [
-            {"test": "showgrid", "field": "y", "scale": "yscale-grid"},
-            {"field": "s_y", "scale": "yscale"}
-          ],
-          "x2": [
-            {"test": "showgrid", "field": "t_x-grid", "scale": "xscale-grid"},
-            {"field": "t_x", "scale": "xscale"}
-          ],
-          "y2": [
-            {"test": "showgrid", "field": "t_y-grid", "scale": "yscale-grid"},
-            {"field": "t_y", "scale": "yscale"}
-          ]
-        }
-      }
-    },
-    {
-      "type": "symbol",
-      "from": {"data": "neurons"},
-      "encode": {
-        "enter": {"stroke": {"value": "#555"}},
-        "update": {
-          "opacity": {"signal": "showneurons ? 1 : 0"},
-          "size": [{"test": "showgrid", "value": 300}, {"value": 150}],
-          "fill": {"field": "class", "scale": "color"},
-          "xc": [
-            {"test": "showgrid", "field": "x-grid", "scale": "xscale-grid"},
-            {"field": "x", "scale": "xscale"}
-          ],
-          "yc": [
-            {"test": "showgrid", "field": "y-grid", "scale": "yscale-grid"},
-            {"field": "y", "scale": "yscale"}
-          ]
-        }
-      }
-    }
-  ],
   "data": [
     {
       "name": "labels",
@@ -106,230 +27,53 @@
     {
       "name": "iris",
       "transform": [
+        {"type": "filter", "expr": "isValid(datum.pw)"},
         {"type": "formula", "expr": "scale('id', datum.class)", "as": "class"}
       ],
-      "values": [
-        {"sl": 5.1, "sw": 3.5, "pl": 1.4, "pw": 0.2, "class": 1},
-        {"sl": 4.9, "sw": 3, "pl": 1.4, "pw": 0.2, "class": 1},
-        {"sl": 4.7, "sw": 3.2, "pl": 1.3, "pw": 0.2, "class": 1},
-        {"sl": 4.6, "sw": 3.1, "pl": 1.5, "pw": 0.2, "class": 1},
-        {"sl": 5, "sw": 3.6, "pl": 1.4, "pw": 0.2, "class": 1},
-        {"sl": 5.4, "sw": 3.9, "pl": 1.7, "pw": 0.4, "class": 1},
-        {"sl": 4.6, "sw": 3.4, "pl": 1.4, "pw": 0.3, "class": 1},
-        {"sl": 5, "sw": 3.4, "pl": 1.5, "pw": 0.2, "class": 1},
-        {"sl": 4.4, "sw": 2.9, "pl": 1.4, "pw": 0.2, "class": 1},
-        {"sl": 4.9, "sw": 3.1, "pl": 1.5, "pw": 0.1, "class": 1},
-        {"sl": 5.4, "sw": 3.7, "pl": 1.5, "pw": 0.2, "class": 1},
-        {"sl": 4.8, "sw": 3.4, "pl": 1.6, "pw": 0.2, "class": 1},
-        {"sl": 4.8, "sw": 3, "pl": 1.4, "pw": 0.1, "class": 1},
-        {"sl": 4.3, "sw": 3, "pl": 1.1, "pw": 0.1, "class": 1},
-        {"sl": 5.8, "sw": 4, "pl": 1.2, "pw": 0.2, "class": 1},
-        {"sl": 5.7, "sw": 4.4, "pl": 1.5, "pw": 0.4, "class": 1},
-        {"sl": 5.4, "sw": 3.9, "pl": 1.3, "pw": 0.4, "class": 1},
-        {"sl": 5.1, "sw": 3.5, "pl": 1.4, "pw": 0.3, "class": 1},
-        {"sl": 5.7, "sw": 3.8, "pl": 1.7, "pw": 0.3, "class": 1},
-        {"sl": 5.1, "sw": 3.8, "pl": 1.5, "pw": 0.3, "class": 1},
-        {"sl": 5.4, "sw": 3.4, "pl": 1.7, "pw": 0.2, "class": 1},
-        {"sl": 5.1, "sw": 3.7, "pl": 1.5, "pw": 0.4, "class": 1},
-        {"sl": 4.6, "sw": 3.6, "pl": 1, "pw": 0.2, "class": 1},
-        {"sl": 5.1, "sw": 3.3, "pl": 1.7, "pw": 0.5, "class": 1},
-        {"sl": 4.8, "sw": 3.4, "pl": 1.9, "pw": 0.2, "class": 1},
-        {"sl": 5, "sw": 3, "pl": 1.6, "pw": 0.2, "class": 1},
-        {"sl": 5, "sw": 3.4, "pl": 1.6, "pw": 0.4, "class": 1},
-        {"sl": 5.2, "sw": 3.5, "pl": 1.5, "pw": 0.2, "class": 1},
-        {"sl": 5.2, "sw": 3.4, "pl": 1.4, "pw": 0.2, "class": 1},
-        {"sl": 4.7, "sw": 3.2, "pl": 1.6, "pw": 0.2, "class": 1},
-        {"sl": 4.8, "sw": 3.1, "pl": 1.6, "pw": 0.2, "class": 1},
-        {"sl": 5.4, "sw": 3.4, "pl": 1.5, "pw": 0.4, "class": 1},
-        {"sl": 5.2, "sw": 4.1, "pl": 1.5, "pw": 0.1, "class": 1},
-        {"sl": 5.5, "sw": 4.2, "pl": 1.4, "pw": 0.2, "class": 1},
-        {"sl": 4.9, "sw": 3.1, "pl": 1.5, "pw": 0.1, "class": 1},
-        {"sl": 5, "sw": 3.2, "pl": 1.2, "pw": 0.2, "class": 1},
-        {"sl": 5.5, "sw": 3.5, "pl": 1.3, "pw": 0.2, "class": 1},
-        {"sl": 4.9, "sw": 3.1, "pl": 1.5, "pw": 0.1, "class": 1},
-        {"sl": 4.4, "sw": 3, "pl": 1.3, "pw": 0.2, "class": 1},
-        {"sl": 5.1, "sw": 3.4, "pl": 1.5, "pw": 0.2, "class": 1},
-        {"sl": 5, "sw": 3.5, "pl": 1.3, "pw": 0.3, "class": 1},
-        {"sl": 4.5, "sw": 2.3, "pl": 1.3, "pw": 0.3, "class": 1},
-        {"sl": 4.4, "sw": 3.2, "pl": 1.3, "pw": 0.2, "class": 1},
-        {"sl": 5, "sw": 3.5, "pl": 1.6, "pw": 0.6, "class": 1},
-        {"sl": 5.1, "sw": 3.8, "pl": 1.9, "pw": 0.4, "class": 1},
-        {"sl": 4.8, "sw": 3, "pl": 1.4, "pw": 0.3, "class": 1},
-        {"sl": 5.1, "sw": 3.8, "pl": 1.6, "pw": 0.2, "class": 1},
-        {"sl": 4.6, "sw": 3.2, "pl": 1.4, "pw": 0.2, "class": 1},
-        {"sl": 5.3, "sw": 3.7, "pl": 1.5, "pw": 0.2, "class": 1},
-        {"sl": 5, "sw": 3.3, "pl": 1.4, "pw": 0.2, "class": 1},
-        {"sl": 7, "sw": 3.2, "pl": 4.7, "pw": 1.4, "class": 2},
-        {"sl": 6.4, "sw": 3.2, "pl": 4.5, "pw": 1.5, "class": 2},
-        {"sl": 6.9, "sw": 3.1, "pl": 4.9, "pw": 1.5, "class": 2},
-        {"sl": 5.5, "sw": 2.3, "pl": 4, "pw": 1.3, "class": 2},
-        {"sl": 6.5, "sw": 2.8, "pl": 4.6, "pw": 1.5, "class": 2},
-        {"sl": 5.7, "sw": 2.8, "pl": 4.5, "pw": 1.3, "class": 2},
-        {"sl": 6.3, "sw": 3.3, "pl": 4.7, "pw": 1.6, "class": 2},
-        {"sl": 4.9, "sw": 2.4, "pl": 3.3, "pw": 1, "class": 2},
-        {"sl": 6.6, "sw": 2.9, "pl": 4.6, "pw": 1.3, "class": 2},
-        {"sl": 5.2, "sw": 2.7, "pl": 3.9, "pw": 1.4, "class": 2},
-        {"sl": 5, "sw": 2, "pl": 3.5, "pw": 1, "class": 2},
-        {"sl": 5.9, "sw": 3, "pl": 4.2, "pw": 1.5, "class": 2},
-        {"sl": 6, "sw": 2.2, "pl": 4, "pw": 1, "class": 2},
-        {"sl": 6.1, "sw": 2.9, "pl": 4.7, "pw": 1.4, "class": 2},
-        {"sl": 5.6, "sw": 2.9, "pl": 3.6, "pw": 1.3, "class": 2},
-        {"sl": 6.7, "sw": 3.1, "pl": 4.4, "pw": 1.4, "class": 2},
-        {"sl": 5.6, "sw": 3, "pl": 4.5, "pw": 1.5, "class": 2},
-        {"sl": 5.8, "sw": 2.7, "pl": 4.1, "pw": 1, "class": 2},
-        {"sl": 6.2, "sw": 2.2, "pl": 4.5, "pw": 1.5, "class": 2},
-        {"sl": 5.6, "sw": 2.5, "pl": 3.9, "pw": 1.1, "class": 2},
-        {"sl": 5.9, "sw": 3.2, "pl": 4.8, "pw": 1.8, "class": 2},
-        {"sl": 6.1, "sw": 2.8, "pl": 4, "pw": 1.3, "class": 2},
-        {"sl": 6.3, "sw": 2.5, "pl": 4.9, "pw": 1.5, "class": 2},
-        {"sl": 6.1, "sw": 2.8, "pl": 4.7, "pw": 1.2, "class": 2},
-        {"sl": 6.4, "sw": 2.9, "pl": 4.3, "pw": 1.3, "class": 2},
-        {"sl": 6.6, "sw": 3, "pl": 4.4, "pw": 1.4, "class": 2},
-        {"sl": 6.8, "sw": 2.8, "pl": 4.8, "pw": 1.4, "class": 2},
-        {"sl": 6.7, "sw": 3, "pl": 5, "pw": 1.7, "class": 2},
-        {"sl": 6, "sw": 2.9, "pl": 4.5, "pw": 1.5, "class": 2},
-        {"sl": 5.7, "sw": 2.6, "pl": 3.5, "pw": 1, "class": 2},
-        {"sl": 5.5, "sw": 2.4, "pl": 3.8, "pw": 1.1, "class": 2},
-        {"sl": 5.5, "sw": 2.4, "pl": 3.7, "pw": 1, "class": 2},
-        {"sl": 5.8, "sw": 2.7, "pl": 3.9, "pw": 1.2, "class": 2},
-        {"sl": 6, "sw": 2.7, "pl": 5.1, "pw": 1.6, "class": 2},
-        {"sl": 5.4, "sw": 3, "pl": 4.5, "pw": 1.5, "class": 2},
-        {"sl": 6, "sw": 3.4, "pl": 4.5, "pw": 1.6, "class": 2},
-        {"sl": 6.7, "sw": 3.1, "pl": 4.7, "pw": 1.5, "class": 2},
-        {"sl": 6.3, "sw": 2.3, "pl": 4.4, "pw": 1.3, "class": 2},
-        {"sl": 5.6, "sw": 3, "pl": 4.1, "pw": 1.3, "class": 2},
-        {"sl": 5.5, "sw": 2.5, "pl": 4, "pw": 1.3, "class": 2},
-        {"sl": 5.5, "sw": 2.6, "pl": 4.4, "pw": 1.2, "class": 2},
-        {"sl": 6.1, "sw": 3, "pl": 4.6, "pw": 1.4, "class": 2},
-        {"sl": 5.8, "sw": 2.6, "pl": 4, "pw": 1.2, "class": 2},
-        {"sl": 5, "sw": 2.3, "pl": 3.3, "pw": 1, "class": 2},
-        {"sl": 5.6, "sw": 2.7, "pl": 4.2, "pw": 1.3, "class": 2},
-        {"sl": 5.7, "sw": 3, "pl": 4.2, "pw": 1.2, "class": 2},
-        {"sl": 5.7, "sw": 2.9, "pl": 4.2, "pw": 1.3, "class": 2},
-        {"sl": 6.2, "sw": 2.9, "pl": 4.3, "pw": 1.3, "class": 2},
-        {"sl": 5.1, "sw": 2.5, "pl": 3, "pw": 1.1, "class": 2},
-        {"sl": 5.7, "sw": 2.8, "pl": 4.1, "pw": 1.3, "class": 2},
-        {"sl": 6.3, "sw": 3.3, "pl": 6, "pw": 2.5, "class": 3},
-        {"sl": 5.8, "sw": 2.7, "pl": 5.1, "pw": 1.9, "class": 3},
-        {"sl": 7.1, "sw": 3, "pl": 5.9, "pw": 2.1, "class": 3},
-        {"sl": 6.3, "sw": 2.9, "pl": 5.6, "pw": 1.8, "class": 3},
-        {"sl": 6.5, "sw": 3, "pl": 5.8, "pw": 2.2, "class": 3},
-        {"sl": 7.6, "sw": 3, "pl": 6.6, "pw": 2.1, "class": 3},
-        {"sl": 4.9, "sw": 2.5, "pl": 4.5, "pw": 1.7, "class": 3},
-        {"sl": 7.3, "sw": 2.9, "pl": 6.3, "pw": 1.8, "class": 3},
-        {"sl": 6.7, "sw": 2.5, "pl": 5.8, "pw": 1.8, "class": 3},
-        {"sl": 7.2, "sw": 3.6, "pl": 6.1, "pw": 2.5, "class": 3},
-        {"sl": 6.5, "sw": 3.2, "pl": 5.1, "pw": 2, "class": 3},
-        {"sl": 6.4, "sw": 2.7, "pl": 5.3, "pw": 1.9, "class": 3},
-        {"sl": 6.8, "sw": 3, "pl": 5.5, "pw": 2.1, "class": 3},
-        {"sl": 5.7, "sw": 2.5, "pl": 5, "pw": 2, "class": 3},
-        {"sl": 5.8, "sw": 2.8, "pl": 5.1, "pw": 2.4, "class": 3},
-        {"sl": 6.4, "sw": 3.2, "pl": 5.3, "pw": 2.3, "class": 3},
-        {"sl": 6.5, "sw": 3, "pl": 5.5, "pw": 1.8, "class": 3},
-        {"sl": 7.7, "sw": 3.8, "pl": 6.7, "pw": 2.2, "class": 3},
-        {"sl": 7.7, "sw": 2.6, "pl": 6.9, "pw": 2.3, "class": 3},
-        {"sl": 6, "sw": 2.2, "pl": 5, "pw": 1.5, "class": 3},
-        {"sl": 6.9, "sw": 3.2, "pl": 5.7, "pw": 2.3, "class": 3},
-        {"sl": 5.6, "sw": 2.8, "pl": 4.9, "pw": 2, "class": 3},
-        {"sl": 7.7, "sw": 2.8, "pl": 6.7, "pw": 2, "class": 3},
-        {"sl": 6.3, "sw": 2.7, "pl": 4.9, "pw": 1.8, "class": 3},
-        {"sl": 6.7, "sw": 3.3, "pl": 5.7, "pw": 2.1, "class": 3},
-        {"sl": 7.2, "sw": 3.2, "pl": 6, "pw": 1.8, "class": 3},
-        {"sl": 6.2, "sw": 2.8, "pl": 4.8, "pw": 1.8, "class": 3},
-        {"sl": 6.1, "sw": 3, "pl": 4.9, "pw": 1.8, "class": 3},
-        {"sl": 6.4, "sw": 2.8, "pl": 5.6, "pw": 2.1, "class": 3},
-        {"sl": 7.2, "sw": 3, "pl": 5.8, "pw": 1.6, "class": 3},
-        {"sl": 7.4, "sw": 2.8, "pl": 6.1, "pw": 1.9, "class": 3},
-        {"sl": 7.9, "sw": 3.8, "pl": 6.4, "pw": 2, "class": 3},
-        {"sl": 6.4, "sw": 2.8, "pl": 5.6, "pw": 2.2, "class": 3},
-        {"sl": 6.3, "sw": 2.8, "pl": 5.1, "pw": 1.5, "class": 3},
-        {"sl": 6.1, "sw": 2.6, "pl": 5.6, "pw": 1.4, "class": 3},
-        {"sl": 7.7, "sw": 3, "pl": 6.1, "pw": 2.3, "class": 3},
-        {"sl": 6.3, "sw": 3.4, "pl": 5.6, "pw": 2.4, "class": 3},
-        {"sl": 6.4, "sw": 3.1, "pl": 5.5, "pw": 1.8, "class": 3},
-        {"sl": 6, "sw": 3, "pl": 4.8, "pw": 1.8, "class": 3},
-        {"sl": 6.9, "sw": 3.1, "pl": 5.4, "pw": 2.1, "class": 3},
-        {"sl": 6.7, "sw": 3.1, "pl": 5.6, "pw": 2.4, "class": 3},
-        {"sl": 6.9, "sw": 3.1, "pl": 5.1, "pw": 2.3, "class": 3},
-        {"sl": 5.8, "sw": 2.7, "pl": 5.1, "pw": 1.9, "class": 3},
-        {"sl": 6.8, "sw": 3.2, "pl": 5.9, "pw": 2.3, "class": 3},
-        {"sl": 6.7, "sw": 3.3, "pl": 5.7, "pw": 2.5, "class": 3},
-        {"sl": 6.7, "sw": 3, "pl": 5.2, "pw": 2.3, "class": 3},
-        {"sl": 6.3, "sw": 2.5, "pl": 5, "pw": 1.9, "class": 3},
-        {"sl": 6.5, "sw": 3, "pl": 5.2, "pw": 2, "class": 3},
-        {"sl": 6.2, "sw": 3.4, "pl": 5.4, "pw": 2.3, "class": 3},
-        {"sl": 5.9, "sw": 3, "pl": 5.1, "pw": 1.8, "class": 3}
-      ]
+      "format": {
+        "type": "csv",
+        "parse": {
+          "sl": "number",
+          "sw": "number",
+          "pl": "number",
+          "pw": "number"
+        },
+        "header": ["sl", "sw", "pl", "pw", "class"],
+        "delimiter": ","
+      },
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/iris.data?token=ASL2ZNJMDB3DV54GHZGUJ63AJIKOM"
     },
     {
       "name": "predictions",
-      "values": [
-        {"neuron": 0, "class": 3},
-        {"neuron": 1, "class": 3},
-        {"neuron": 2, "class": 3},
-        {"neuron": 3, "class": 3},
-        {"neuron": 4, "class": 0},
-        {"neuron": 5, "class": 1},
-        {"neuron": 6, "class": 1},
-        {"neuron": 7, "class": 1},
-        {"neuron": 8, "class": 1},
-        {"neuron": 9, "class": 0},
-        {"neuron": 10, "class": 3},
-        {"neuron": 11, "class": 3},
-        {"neuron": 12, "class": 3},
-        {"neuron": 13, "class": 3},
-        {"neuron": 14, "class": 2},
-        {"neuron": 15, "class": 1},
-        {"neuron": 16, "class": 1},
-        {"neuron": 17, "class": 1},
-        {"neuron": 18, "class": 0},
-        {"neuron": 19, "class": 0},
-        {"neuron": 20, "class": 3},
-        {"neuron": 21, "class": 3},
-        {"neuron": 22, "class": 3},
-        {"neuron": 23, "class": 3},
-        {"neuron": 24, "class": 2},
-        {"neuron": 25, "class": 2},
-        {"neuron": 26, "class": 0},
-        {"neuron": 27, "class": 0},
-        {"neuron": 28, "class": 0},
-        {"neuron": 29, "class": 0},
-        {"neuron": 30, "class": 3},
-        {"neuron": 31, "class": 3},
-        {"neuron": 32, "class": 2},
-        {"neuron": 33, "class": 2},
-        {"neuron": 34, "class": 3},
-        {"neuron": 35, "class": 2},
-        {"neuron": 36, "class": 2},
-        {"neuron": 37, "class": 2},
-        {"neuron": 38, "class": 2},
-        {"neuron": 39, "class": 3},
-        {"neuron": 40, "class": 3},
-        {"neuron": 41, "class": 3},
-        {"neuron": 42, "class": 2},
-        {"neuron": 43, "class": 2},
-        {"neuron": 44, "class": 2},
-        {"neuron": 45, "class": 2},
-        {"neuron": 46, "class": 2},
-        {"neuron": 47, "class": 2},
-        {"neuron": 48, "class": 3},
-        {"neuron": 49, "class": 3},
-        {"neuron": 50, "class": 3},
-        {"neuron": 51, "class": 3},
-        {"neuron": 52, "class": 3},
-        {"neuron": 53, "class": 2},
-        {"neuron": 54, "class": 2},
-        {"neuron": 55, "class": 2},
-        {"neuron": 56, "class": 2},
-        {"neuron": 57, "class": 3},
-        {"neuron": 58, "class": 3},
-        {"neuron": 59, "class": 3}
-      ]
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/predictions.data?token=ASL2ZNMX2DNC26JDOYJTMRDAJIPZW",
+      "format": {
+        "type": "dsv",
+        "delimiter": ";",
+        "header": ["neuron", "class"],
+        "parse": {"neuron": "number", "class": "number"}
+      }
     },
     {
       "name": "neurons",
+      "format": {
+        "type": "dsv",
+        "delimiter": ";",
+        "parse": {"neuron": "number", "step": "number", "score": "number"},
+        "header": ["vector", "neuron", "step", "score"]
+      },
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som.data?token=ASL2ZNJEDM7E7CPBR57EAMLAJIM2K",
       "transform": [
         {"type": "filter", "expr": "datum.step === current_step"},
+        {
+          "type": "formula",
+          "expr": "split(replace(replace(datum.vector, '[',''),']',''),',')",
+          "as": "vector"
+        },
+        {
+          "type": "formula",
+          "expr": "[toNumber(datum.vector[0]),toNumber(datum.vector[1]),toNumber(datum.vector[2]),toNumber(datum.vector[3])]",
+          "as": "vector"
+        },
         {
           "type": "formula",
           "expr": "datum.vector[0]+datum.vector[1]",
@@ -348,668 +92,6 @@
           "key": "neuron",
           "values": ["class"],
           "fields": ["neuron"]
-        }
-      ],
-      "values": [
-        {
-          "vector": [7.324676, 2.946519, 5.620285, 2.016256],
-          "neuron": 0,
-          "step": -1,
-          "score": 0,
-          "y": 10.271195,
-          "x": 7.636540999999999,
-          "y-grid": 0,
-          "x-grid": 0,
-          "class": 3
-        },
-        {
-          "vector": [7.58193, 2.474123, 2.977814, 1.943751],
-          "neuron": 1,
-          "step": -1,
-          "score": 0,
-          "y": 10.056053,
-          "x": 4.921565,
-          "y-grid": 0,
-          "x-grid": 1,
-          "class": 3
-        },
-        {
-          "vector": [5.299989, 3.329528, 3.816643, 1.60929],
-          "neuron": 2,
-          "step": -1,
-          "score": 0,
-          "y": 8.629517,
-          "x": 5.425933000000001,
-          "y-grid": 0,
-          "x-grid": 2,
-          "class": 3
-        },
-        {
-          "vector": [5.613224, 3.232162, 6.618155, 2.298868],
-          "neuron": 3,
-          "step": -1,
-          "score": 0,
-          "y": 8.845386,
-          "x": 8.917023,
-          "y-grid": 0,
-          "x-grid": 3,
-          "class": 3
-        },
-        {
-          "vector": [6.588562, 3.721513, 1.835455, 1.556725],
-          "neuron": 4,
-          "step": -1,
-          "score": 0,
-          "y": 10.310075,
-          "x": 3.3921799999999998,
-          "y-grid": 0,
-          "x-grid": 4,
-          "class": 0
-        },
-        {
-          "vector": [4.358682, 2.582928, 1.809666, 2.030024],
-          "neuron": 5,
-          "step": -1,
-          "score": 0,
-          "y": 6.94161,
-          "x": 3.83969,
-          "y-grid": 0,
-          "x-grid": 5,
-          "class": 1
-        },
-        {
-          "vector": [4.864045, 2.962267, 1.765764, 0.361141],
-          "neuron": 6,
-          "step": -1,
-          "score": 0,
-          "y": 7.826312,
-          "x": 2.126905,
-          "y-grid": 0,
-          "x-grid": 6,
-          "class": 1
-        },
-        {
-          "vector": [7.896128, 2.523817, 4.026301, 2.113869],
-          "neuron": 7,
-          "step": -1,
-          "score": 0,
-          "y": 10.419945,
-          "x": 6.14017,
-          "y-grid": 0,
-          "x-grid": 7,
-          "class": 1
-        },
-        {
-          "vector": [6.505503, 2.710476, 4.761558, 1.358289],
-          "neuron": 8,
-          "step": -1,
-          "score": 0,
-          "y": 9.215979,
-          "x": 6.119847,
-          "y-grid": 0,
-          "x-grid": 8,
-          "class": 1
-        },
-        {
-          "vector": [6.076899, 4.33466, 2.725849, 1.951258],
-          "neuron": 9,
-          "step": -1,
-          "score": 0,
-          "y": 10.411559,
-          "x": 4.677107,
-          "y-grid": 0,
-          "x-grid": 9,
-          "class": 0
-        },
-        {
-          "vector": [6.196282, 3.847793, 3.361349, 2.239671],
-          "neuron": 10,
-          "step": -1,
-          "score": 0,
-          "y": 10.044075,
-          "x": 5.60102,
-          "y-grid": 1,
-          "x-grid": 0,
-          "class": 3
-        },
-        {
-          "vector": [5.319933, 2.8459, 5.765575, 2.305664],
-          "neuron": 11,
-          "step": -1,
-          "score": 0,
-          "y": 8.165833,
-          "x": 8.071239,
-          "y-grid": 1,
-          "x-grid": 1,
-          "class": 3
-        },
-        {
-          "vector": [4.551119, 4.278385, 4.103373, 0.306534],
-          "neuron": 12,
-          "step": -1,
-          "score": 0,
-          "y": 8.829504,
-          "x": 4.4099070000000005,
-          "y-grid": 1,
-          "x-grid": 2,
-          "class": 3
-        },
-        {
-          "vector": [4.99197, 3.591745, 6.252372, 0.937343],
-          "neuron": 13,
-          "step": -1,
-          "score": 0,
-          "y": 8.583715,
-          "x": 7.1897150000000005,
-          "y-grid": 1,
-          "x-grid": 3,
-          "class": 3
-        },
-        {
-          "vector": [4.531017, 2.048055, 3.70044, 0.25143],
-          "neuron": 14,
-          "step": -1,
-          "score": 0,
-          "y": 6.579072,
-          "x": 3.95187,
-          "y-grid": 1,
-          "x-grid": 4,
-          "class": 2
-        },
-        {
-          "vector": [5.157808, 4.329522, 6.323028, 2.142207],
-          "neuron": 15,
-          "step": -1,
-          "score": 0,
-          "y": 9.48733,
-          "x": 8.465235,
-          "y-grid": 1,
-          "x-grid": 5,
-          "class": 1
-        },
-        {
-          "vector": [5.259997, 3.295425, 3.213721, 1.924597],
-          "neuron": 16,
-          "step": -1,
-          "score": 0,
-          "y": 8.555422,
-          "x": 5.138318,
-          "y-grid": 1,
-          "x-grid": 6,
-          "class": 1
-        },
-        {
-          "vector": [6.145127, 3.602537, 4.136478, 0.194273],
-          "neuron": 17,
-          "step": -1,
-          "score": 0,
-          "y": 9.747664,
-          "x": 4.330751,
-          "y-grid": 1,
-          "x-grid": 7,
-          "class": 1
-        },
-        {
-          "vector": [5.875495, 4.236404, 6.491778, 1.830286],
-          "neuron": 18,
-          "step": -1,
-          "score": 0,
-          "y": 10.111899000000001,
-          "x": 8.322064000000001,
-          "y-grid": 1,
-          "x-grid": 8,
-          "class": 0
-        },
-        {
-          "vector": [5.323456, 3.772482, 4.775875, 0.949717],
-          "neuron": 19,
-          "step": -1,
-          "score": 0,
-          "y": 9.095938,
-          "x": 5.725592,
-          "y-grid": 1,
-          "x-grid": 9,
-          "class": 0
-        },
-        {
-          "vector": [6.776301, 2.398338, 3.596617, 2.212181],
-          "neuron": 20,
-          "step": -1,
-          "score": 0,
-          "y": 9.174638999999999,
-          "x": 5.808798,
-          "y-grid": 2,
-          "x-grid": 0,
-          "class": 3
-        },
-        {
-          "vector": [7.285124, 2.792809, 2.350912, 2.244094],
-          "neuron": 21,
-          "step": -1,
-          "score": 0,
-          "y": 10.077933,
-          "x": 4.595006,
-          "y-grid": 2,
-          "x-grid": 1,
-          "class": 3
-        },
-        {
-          "vector": [5.561297, 3.648008, 6.643163, 1.512736],
-          "neuron": 22,
-          "step": -1,
-          "score": 0,
-          "y": 9.209305,
-          "x": 8.155899,
-          "y-grid": 2,
-          "x-grid": 2,
-          "class": 3
-        },
-        {
-          "vector": [6.666295, 4.060823, 3.593404, 2.317527],
-          "neuron": 23,
-          "step": -1,
-          "score": 0,
-          "y": 10.727118,
-          "x": 5.910931,
-          "y-grid": 2,
-          "x-grid": 3,
-          "class": 3
-        },
-        {
-          "vector": [5.734372, 3.955441, 5.036889, 2.286333],
-          "neuron": 24,
-          "step": -1,
-          "score": 0,
-          "y": 9.689813,
-          "x": 7.323222,
-          "y-grid": 2,
-          "x-grid": 4,
-          "class": 2
-        },
-        {
-          "vector": [6.036966, 2.51798, 6.606489, 2.308308],
-          "neuron": 25,
-          "step": -1,
-          "score": 0,
-          "y": 8.554946,
-          "x": 8.914797,
-          "y-grid": 2,
-          "x-grid": 5,
-          "class": 2
-        },
-        {
-          "vector": [4.831576, 4.114549, 4.782376, 1.136688],
-          "neuron": 26,
-          "step": -1,
-          "score": 0,
-          "y": 8.946125,
-          "x": 5.9190640000000005,
-          "y-grid": 2,
-          "x-grid": 6,
-          "class": 0
-        },
-        {
-          "vector": [6.530547, 2.674543, 5.637412, 0.837899],
-          "neuron": 27,
-          "step": -1,
-          "score": 0,
-          "y": 9.20509,
-          "x": 6.4753110000000005,
-          "y-grid": 2,
-          "x-grid": 7,
-          "class": 0
-        },
-        {
-          "vector": [5.909321, 2.542656, 2.106445, 0.762963],
-          "neuron": 28,
-          "step": -1,
-          "score": 0,
-          "y": 8.451977,
-          "x": 2.869408,
-          "y-grid": 2,
-          "x-grid": 8,
-          "class": 0
-        },
-        {
-          "vector": [6.303198, 2.999603, 2.000682, 2.276329],
-          "neuron": 29,
-          "step": -1,
-          "score": 0,
-          "y": 9.302801,
-          "x": 4.277011,
-          "y-grid": 2,
-          "x-grid": 9,
-          "class": 0
-        },
-        {
-          "vector": [4.671416, 2.302581, 3.92312, 1.925141],
-          "neuron": 30,
-          "step": -1,
-          "score": 0,
-          "y": 6.973997,
-          "x": 5.848261,
-          "y-grid": 3,
-          "x-grid": 0,
-          "class": 3
-        },
-        {
-          "vector": [7.845106, 4.24401, 5.038226, 1.019652],
-          "neuron": 31,
-          "step": -1,
-          "score": 0,
-          "y": 12.089116,
-          "x": 6.057878,
-          "y-grid": 3,
-          "x-grid": 1,
-          "class": 3
-        },
-        {
-          "vector": [6.999175, 2.884793, 2.735546, 0.657428],
-          "neuron": 32,
-          "step": -1,
-          "score": 0,
-          "y": 9.883968,
-          "x": 3.3929739999999997,
-          "y-grid": 3,
-          "x-grid": 2,
-          "class": 2
-        },
-        {
-          "vector": [6.404159, 2.586591, 1.8991, 1.857156],
-          "neuron": 33,
-          "step": -1,
-          "score": 0,
-          "y": 8.99075,
-          "x": 3.756256,
-          "y-grid": 3,
-          "x-grid": 3,
-          "class": 2
-        },
-        {
-          "vector": [4.75171, 3.904329, 1.968201, 1.888171],
-          "neuron": 34,
-          "step": -1,
-          "score": 0,
-          "y": 8.656039,
-          "x": 3.8563720000000004,
-          "y-grid": 3,
-          "x-grid": 4,
-          "class": 3
-        },
-        {
-          "vector": [4.568307, 4.28025, 1.309923, 1.351752],
-          "neuron": 35,
-          "step": -1,
-          "score": 0,
-          "y": 8.848557,
-          "x": 2.661675,
-          "y-grid": 3,
-          "x-grid": 5,
-          "class": 2
-        },
-        {
-          "vector": [4.934358, 2.57615, 5.707009, 1.858371],
-          "neuron": 36,
-          "step": -1,
-          "score": 0,
-          "y": 7.510508,
-          "x": 7.56538,
-          "y-grid": 3,
-          "x-grid": 6,
-          "class": 2
-        },
-        {
-          "vector": [6.663629, 4.321772, 4.772804, 1.923364],
-          "neuron": 37,
-          "step": -1,
-          "score": 0,
-          "y": 10.985401,
-          "x": 6.696168,
-          "y-grid": 3,
-          "x-grid": 7,
-          "class": 2
-        },
-        {
-          "vector": [4.63653, 2.323766, 4.069239, 0.287757],
-          "neuron": 38,
-          "step": -1,
-          "score": 0,
-          "y": 6.960296,
-          "x": 4.356996,
-          "y-grid": 3,
-          "x-grid": 8,
-          "class": 2
-        },
-        {
-          "vector": [4.551663, 2.491172, 3.722381, 2.067225],
-          "neuron": 39,
-          "step": -1,
-          "score": 0,
-          "y": 7.042835,
-          "x": 5.789606,
-          "y-grid": 3,
-          "x-grid": 9,
-          "class": 3
-        },
-        {
-          "vector": [6.363947, 3.813394, 1.306439, 0.478737],
-          "neuron": 40,
-          "step": -1,
-          "score": 0,
-          "y": 10.177341,
-          "x": 1.7851759999999999,
-          "y-grid": 4,
-          "x-grid": 0,
-          "class": 3
-        },
-        {
-          "vector": [7.899977, 2.490389, 6.250738, 0.401124],
-          "neuron": 41,
-          "step": -1,
-          "score": 0,
-          "y": 10.390366,
-          "x": 6.651862,
-          "y-grid": 4,
-          "x-grid": 1,
-          "class": 3
-        },
-        {
-          "vector": [7.892076, 2.129738, 6.136185, 0.273589],
-          "neuron": 42,
-          "step": -1,
-          "score": 0,
-          "y": 10.021814000000001,
-          "x": 6.4097740000000005,
-          "y-grid": 4,
-          "x-grid": 2,
-          "class": 2
-        },
-        {
-          "vector": [4.314982, 4.215366, 4.503964, 0.532893],
-          "neuron": 43,
-          "step": -1,
-          "score": 0,
-          "y": 8.530348,
-          "x": 5.0368569999999995,
-          "y-grid": 4,
-          "x-grid": 3,
-          "class": 2
-        },
-        {
-          "vector": [4.887273, 2.940057, 6.386857, 2.067268],
-          "neuron": 44,
-          "step": -1,
-          "score": 0,
-          "y": 7.82733,
-          "x": 8.454125,
-          "y-grid": 4,
-          "x-grid": 4,
-          "class": 2
-        },
-        {
-          "vector": [5.592743, 3.325964, 4.418637, 1.186182],
-          "neuron": 45,
-          "step": -1,
-          "score": 0,
-          "y": 8.918707,
-          "x": 5.604819000000001,
-          "y-grid": 4,
-          "x-grid": 5,
-          "class": 2
-        },
-        {
-          "vector": [6.774595, 2.239136, 4.131767, 1.917505],
-          "neuron": 46,
-          "step": -1,
-          "score": 0,
-          "y": 9.013731,
-          "x": 6.049272,
-          "y-grid": 4,
-          "x-grid": 6,
-          "class": 2
-        },
-        {
-          "vector": [5.395463, 4.381348, 4.40413, 2.206273],
-          "neuron": 47,
-          "step": -1,
-          "score": 0,
-          "y": 9.776811,
-          "x": 6.610403,
-          "y-grid": 4,
-          "x-grid": 7,
-          "class": 2
-        },
-        {
-          "vector": [6.992113, 3.509384, 1.208983, 1.894727],
-          "neuron": 48,
-          "step": -1,
-          "score": 0,
-          "y": 10.501497,
-          "x": 3.10371,
-          "y-grid": 4,
-          "x-grid": 8,
-          "class": 3
-        },
-        {
-          "vector": [7.299659, 4.220904, 6.152301, 2.09449],
-          "neuron": 49,
-          "step": -1,
-          "score": 0,
-          "y": 11.520563,
-          "x": 8.246791,
-          "y-grid": 4,
-          "x-grid": 9,
-          "class": 3
-        },
-        {
-          "vector": [7.825963, 3.785147, 6.329861, 2.46063],
-          "neuron": 50,
-          "step": -1,
-          "score": 0,
-          "y": 11.61111,
-          "x": 8.790491,
-          "y-grid": 5,
-          "x-grid": 0,
-          "class": 3
-        },
-        {
-          "vector": [6.700769, 3.19342, 1.967411, 2.092028],
-          "neuron": 51,
-          "step": -1,
-          "score": 0,
-          "y": 9.894189,
-          "x": 4.059439,
-          "y-grid": 5,
-          "x-grid": 1,
-          "class": 3
-        },
-        {
-          "vector": [7.500216, 2.184787, 4.833271, 0.695306],
-          "neuron": 52,
-          "step": -1,
-          "score": 0,
-          "y": 9.685003,
-          "x": 5.528577,
-          "y-grid": 5,
-          "x-grid": 2,
-          "class": 3
-        },
-        {
-          "vector": [6.566127, 2.549929, 5.133658, 0.860481],
-          "neuron": 53,
-          "step": -1,
-          "score": 0,
-          "y": 9.116056,
-          "x": 5.994139,
-          "y-grid": 5,
-          "x-grid": 3,
-          "class": 2
-        },
-        {
-          "vector": [5.483597, 2.555427, 1.43755, 1.619373],
-          "neuron": 54,
-          "step": -1,
-          "score": 0,
-          "y": 8.039024,
-          "x": 3.0569230000000003,
-          "y-grid": 5,
-          "x-grid": 4,
-          "class": 2
-        },
-        {
-          "vector": [5.105163, 3.562717, 4.013047, 2.431518],
-          "neuron": 55,
-          "step": -1,
-          "score": 0,
-          "y": 8.66788,
-          "x": 6.444565000000001,
-          "y-grid": 5,
-          "x-grid": 5,
-          "class": 2
-        },
-        {
-          "vector": [5.308151, 3.310657, 5.243685, 0.371873],
-          "neuron": 56,
-          "step": -1,
-          "score": 0,
-          "y": 8.618808,
-          "x": 5.615558,
-          "y-grid": 5,
-          "x-grid": 6,
-          "class": 2
-        },
-        {
-          "vector": [5.99734, 3.422096, 6.571477, 1.182202],
-          "neuron": 57,
-          "step": -1,
-          "score": 0,
-          "y": 9.419436000000001,
-          "x": 7.753679,
-          "y-grid": 5,
-          "x-grid": 7,
-          "class": 3
-        },
-        {
-          "vector": [5.510864, 4.034443, 3.563628, 0.107756],
-          "neuron": 58,
-          "step": -1,
-          "score": 0,
-          "y": 9.545307,
-          "x": 3.671384,
-          "y-grid": 5,
-          "x-grid": 8,
-          "class": 3
-        },
-        {
-          "vector": [5.541795, 3.436355, 5.916135, 0.66134],
-          "neuron": 59,
-          "step": -1,
-          "score": 0,
-          "y": 8.97815,
-          "x": 6.577475,
-          "y-grid": 5,
-          "x-grid": 9,
-          "class": 3
         }
       ]
     },
@@ -1130,6 +212,85 @@
       "domain": false,
       "labels": false,
       "ticks": false
+    }
+  ],
+  "marks": [
+    {
+      "type": "text",
+      "encode": {
+        "enter": {
+          "fontSize": {"value": 14},
+          "fontWeight": {"value": "bold"},
+          "xc": {"signal": "width/2"},
+          "align": {"value": "center"},
+          "fill": {"value": "#eee"}
+        },
+        "update": {
+          "text": {
+            "signal": "showgrid ? 'Neuron map':'K-Means step: ' + current_step"
+          }
+        }
+      }
+    },
+    {
+      "type": "symbol",
+      "from": {"data": "iris"},
+      "encode": {
+        "enter": {"stroke": {"value": "#555"}},
+        "update": {
+          "opacity": {"signal": "showrealdata && !showgrid ? 0.5 : 0"},
+          "fill": {"field": "class", "scale": "color"},
+          "xc": {"signal": "datum.pl + datum.pw", "scale": "xscale"},
+          "yc": {"signal": "datum.sl + datum.sw", "scale": "yscale"}
+        }
+      }
+    },
+    {
+      "type": "rule",
+      "from": {"data": "links"},
+      "encode": {
+        "update": {
+          "stroke": {"value": "#bbb"},
+          "strokeWidth": {"value": 0.5},
+          "opacity": {"signal": "showlinks && showneurons ? 1 :0"},
+          "x": [
+            {"test": "showgrid", "field": "x", "scale": "xscale-grid"},
+            {"field": "s_x", "scale": "xscale"}
+          ],
+          "y": [
+            {"test": "showgrid", "field": "y", "scale": "yscale-grid"},
+            {"field": "s_y", "scale": "yscale"}
+          ],
+          "x2": [
+            {"test": "showgrid", "field": "t_x-grid", "scale": "xscale-grid"},
+            {"field": "t_x", "scale": "xscale"}
+          ],
+          "y2": [
+            {"test": "showgrid", "field": "t_y-grid", "scale": "yscale-grid"},
+            {"field": "t_y", "scale": "yscale"}
+          ]
+        }
+      }
+    },
+    {
+      "type": "symbol",
+      "from": {"data": "neurons"},
+      "encode": {
+        "enter": {"stroke": {"value": "#555"}},
+        "update": {
+          "opacity": {"signal": "showneurons ? 1 : 0"},
+          "size": [{"test": "showgrid", "value": 300}, {"value": 150}],
+          "fill": {"field": "class", "scale": "color"},
+          "xc": [
+            {"test": "showgrid", "field": "x-grid", "scale": "xscale-grid"},
+            {"field": "x", "scale": "xscale"}
+          ],
+          "yc": [
+            {"test": "showgrid", "field": "y-grid", "scale": "yscale-grid"},
+            {"field": "y", "scale": "yscale"}
+          ]
+        }
+      }
     }
   ]
 }
