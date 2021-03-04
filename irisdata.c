@@ -27,13 +27,9 @@ dataVector* getIrisData(somConfig *config){
     fp = fopen("iris.data", "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
-    int ln = -1;
+    int ln = 0;
     while ((read = getline(&line, &len, fp)) != -1) {
         if(read>1){
-            if(ln == -1){
-                ln++;
-                continue;
-            }
             data = (dataVector*) realloc(data, (ln+1) * sizeof(dataVector));
             char delim[]=",";
             int column = 0;

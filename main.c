@@ -157,7 +157,6 @@ int main()
     FILE * fp;
     fp = fopen("predictions.data", "w");
     if(fp != NULL){
-       fprintf(fp, "neuron;class\n");
        for(int i=0;i<config.map_r;i++){
         for(int j=0;j<config.map_c;j++){
             fprintf(fp, "%d;%d\n", (i*config.map_c + j), map[i][j]);

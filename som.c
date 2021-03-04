@@ -191,7 +191,6 @@ void write(somNeuron* weights, somConfig config){
     FILE * fp;
     fp = fopen("som.data", "w");
     if(fp != NULL){
-        fprintf(fp,"vector;neuron;step;score\n");
         append(fp, weights, config, -1, NULL);
     }
     fclose(fp);
