@@ -173,7 +173,7 @@ void append(FILE *fp, somNeuron *weights, somConfig config, long stepid, int sco
             denorm[k]= weights[i].w[k];
         }
         for(int j=0;j<config.p;j++){
-            fprintf(fp, "%f", weights[i].w[j]);
+            fprintf(fp, "%f", denorm[j]);
             if(j<config.p-1){
                 fputs(",", fp);
             }
