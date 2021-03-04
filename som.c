@@ -111,6 +111,7 @@ void initialize(somNeuron *weights, somConfig config, dataBoundary *boundaries){
         for(int j=0;j<config.p;j++){
             weights[i].w[j]= getRandom(boundaries[j]);
         }
+        weights[i].norm = normalizeVector(weights[i].w, config.p);
     }
 }
 //Get min and max for each parameters of the data set
@@ -168,6 +169,11 @@ somNeuron *getsom(dataVector* data, somConfig *config)
 void append(FILE *fp, somNeuron *weights, somConfig config, long stepid, int scores[]){
     for(int i=0; i<config.nw; i++){
         fputs("[", fp);
+        double denorm[config.p];
+        for(int k=0;k<config.p;k++){
+            denorm[k]= weights[i].w[k];
+        }
+        denormalizeVector(denorm, config.p, weights[i].norm);
         for(int j=0;j<config.p;j++){
             fprintf(fp, "%f", weights[i].w[j]);
             if(j<config.p-1){

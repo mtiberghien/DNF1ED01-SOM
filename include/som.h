@@ -3,6 +3,7 @@
 //The SOM neuron
 typedef struct somNeuron{
     double *w;
+    double norm;
 } somNeuron;
 
 //Learn from an entry vector. The winner neuron is estimated the neurons are updated accordingly

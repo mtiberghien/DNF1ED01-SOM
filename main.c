@@ -108,7 +108,7 @@ int main()
         printf("%s",getIrisLabel(i));
         for(int j=0;j<config.nw;j++){
             for(int k=0;k<config.n;k++){
-                if(data[k].v[config.p]== i && predictions[k]==j){
+                if(data[k].class == i && predictions[k]==j){
                     validations[i][j]+=1;
                 }
             }
@@ -144,7 +144,7 @@ int main()
         }
     }
     for(int i=0;i<config.n;i++){
-        int real_class = data[i].v[config.p];
+        int real_class = data[i].class;
         int neuron_index = predictions[i];
         map[neuron_index/config.map_c][neuron_index%config.map_c] = real_class+1;
     }

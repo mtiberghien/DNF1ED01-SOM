@@ -3,6 +3,8 @@
 
 typedef struct dataVector{
     double *v;
+    double norm;
+    int class;
 } dataVector;
 
 typedef struct neuronLocation{
@@ -36,3 +38,5 @@ typedef struct dataBoundary{
 //get the min value for 2 doubles
 double min(double x, double y);
 double max(double x, double y);
+double normalizeVector(double* v, int p);
+void denormalizeVector(double* v, int p, double norm);
