@@ -82,7 +82,7 @@ int main()
         }
         config.alpha*=0.99;
         config.sigma*=0.90;
-        config.radius*= max(1, config.radius-1);
+        config.radius = max(1, config.radius-1);
     }
 
     
