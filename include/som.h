@@ -11,3 +11,6 @@ short learn(dataVector v, somNeuron * weights, somConfig config);
 int predict(dataVector v, somNeuron * weights, somConfig config);
 //Get Initialized weights vectors for a specific dataset and a specific config;
 somNeuron *getsom(dataVector *data, somConfig *config);
+//Append the current state of SOM neurons (one line by neuron) using provided step id
+void writeAppend(long stepid, somNeuron* weights, somConfig config, int scores[]);
+void write(somNeuron* weights, somConfig config);

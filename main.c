@@ -45,38 +45,43 @@ int main()
     config.sigma = 0.8;
     dataVector *data = getIrisData(&config);
     somNeuron *weights = getsom(data, &config);
+    write(weights, config);
     printf("SOM Settings:\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %.2f\n%19s: %.2f\n\n", "Entries", config.n,
          "Neurons", config.nw ,"Map rows", config.map_r, "Map columns", config.map_c, "Radius", config.radius,
          "Learning rate", config.alpha, "Neighborhood factor", config.sigma);
-    int episodes = 15;
+    int episodes = 5;
     int vectorsToPropose[config.n];
     for(int i=0;i<config.n;i++){
         vectorsToPropose[i]=i;
     }
-
+    int predictions[config.n];
+    int scores[config.nw];
     for(int i=0;i<episodes;i++){
+        long stepId=config.n*i;
         for(int j=config.n-1;j>=0;j--){
         int ivector = (((double)rand()/RAND_MAX)*(j));
-        learn(data[vectorsToPropose[ivector]], weights, config);
+        learn(data[vectorsToPropose[ivector]], weights, config);     
         vectorsToPropose[ivector] = vectorsToPropose[j];
+        for(int i=0;i<config.n;i++){
+           predictions[i]=0;
+        }
+    
+        for(int i=0;i<config.nw;i++){
+            scores[i]=0;
+            }
+        for(int i=0;i<config.n;i++){
+            int iWinner = predict(data[i], weights, config);
+            scores[iWinner]+=1;
+            predictions[i] = iWinner;
+            }
+         writeAppend(stepId++, weights, config, scores);
         }
         config.alpha*=0.99;
         config.sigma*=0.90;
+
     }
 
-    int predictions[config.n];
-    for(int i=0;i<config.n;i++){
-           predictions[i]=0;
-        }
-    int scores[config.nw];
-    for(int i=0;i<config.nw;i++){
-           scores[i]=0;
-        }
-    for(int i=0;i<config.n;i++){
-           int iWinner = predict(data[i], weights, config);
-           scores[iWinner]+=1;
-           predictions[i] = iWinner;
-        }
+    
     int sum=0;
     int classes =0;
     for(int i=0;i<config.nw;i++){
@@ -139,7 +144,7 @@ int main()
         int neuron_index = predictions[i];
         map[neuron_index/config.map_c][neuron_index%config.map_c] = real_class+1;
     }
-
+    printf("\nNeuron Map:\n");
     for(int i=0;i<config.map_r;i++){
         for(int j=0;j<config.map_c;j++){
             printf("\033[0%s", getTerminalColorCode(map[i][j]));
@@ -148,6 +153,18 @@ int main()
         }
         printf("\n");
     }
+
+    FILE * fp;
+    fp = fopen("predictions.data", "w");
+    if(fp != NULL){
+       for(int i=0;i<config.map_r;i++){
+        for(int j=0;j<config.map_c;j++){
+            fprintf(fp, "%d;%d\n", (i*config.map_c + j), map[i][j]);
+        }
+    } 
+    }
+    fclose(fp);
+
 
     clear_mem(data, weights, config);
 }

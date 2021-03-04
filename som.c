@@ -2,6 +2,7 @@
 #include "include/common.h"
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 // Return min between 2 doubles
 double min(double x, double y)
@@ -163,5 +164,37 @@ somNeuron *getsom(dataVector* data, somConfig *config)
     initialize(weights, *config, boundaries);
     return weights;
 }
+
+void append(FILE *fp, somNeuron *weights, somConfig config, long stepid, int scores[]){
+    for(int i=0; i<config.nw; i++){
+        fputs("[", fp);
+        for(int j=0;j<config.p;j++){
+            fprintf(fp, "%f", weights[i].w[j]);
+            if(j<config.p-1){
+                fputs(",", fp);
+            }
+        }
+        fprintf(fp, "];%d;%ld;%d\n", i, stepid, scores == NULL ? 0 :scores[i]);
+    }
+}
+
+void writeAppend(long stepid, somNeuron *weights, somConfig config, int scores[]){
+    FILE * fp;
+    fp = fopen("som.data", "a");
+    if(fp != NULL){
+        append(fp, weights, config, stepid, scores);
+    }
+    fclose(fp);
+}
+
+void write(somNeuron* weights, somConfig config){
+    FILE * fp;
+    fp = fopen("som.data", "w");
+    if(fp != NULL){
+        append(fp, weights, config, -1, NULL);
+    }
+    fclose(fp);
+}
+
 
 
