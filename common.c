@@ -1,5 +1,15 @@
 #include <math.h>
 
+// Return min between 2 doubles
+double min(double x, double y)
+{
+    return y < x ? y : x;
+}
+// Return max between 2 doubles
+double max(double x, double y){
+    return y > x ? y : x;
+}
+
 double normalizeVector(double* v, int p){
     double norm=0;
     for(int i = 0;i<p;i++){

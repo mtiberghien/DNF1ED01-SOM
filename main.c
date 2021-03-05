@@ -5,17 +5,6 @@
 #include "include/som.h"
 
 
-void clear_mem(dataVector *data, somNeuron *weights, somConfig config){
-    for(int i=0;i<config.n;i++){
-        free(data[i].v);
-    }
-    for(int i=0;i<config.nw;i++){
-        free(weights[i].w);
-    }
-    free(weights);
-    free(data);
-}
-
 char* getIrisLabel(int index){
         switch(index){
             case 0: return "    Iris-setosa:";
@@ -38,65 +27,81 @@ char* getTerminalColorCode(int index){
     return "m";
 }
 
-void initshuffle(int* array, int n){
-    for(int i=0;i<n;i++){
-        array[i] = i;
-    }
-}
-
 int main()
 {
-    somConfig config;
-    config.alpha = 0.7;
-    config.sigma = 0.8;
-    dataVector *data = getIrisData(&config);
-    somNeuron *weights = getsom(data, &config);
-    write(weights, config);
-    printf("SOM Settings:\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %.2f\n%19s: %.2f\n\n", "Entries", config.n,
-         "Neurons", config.nw ,"Map rows", config.map_r, "Map columns", config.map_c, "Radius", config.radius,
-         "Learning rate", config.alpha, "Neighborhood factor", config.sigma);
-    int episodes = 5;
-    int vectorsToPropose[config.n];
-    int predictions[config.n];
-    int scores[config.nw];
-    for(int i=0;i<episodes;i++){
-        initshuffle(vectorsToPropose, config.n);
-        long stepId=config.n*i;
-        for(int j=config.n-1;j>=0;j--){
-        int ivector = (((double)rand()/RAND_MAX)*(j));
-        learn(data[vectorsToPropose[ivector]], weights, config);     
-        vectorsToPropose[ivector] = vectorsToPropose[j];
-        for(int i=0;i<config.n;i++){
-           predictions[i]=0;
-        }
     
-        for(int i=0;i<config.nw;i++){
-            scores[i]=0;
+    somNeuron** weights;
+    somConfig *config = getsomDefaultConfig();
+    dataVector *data = getIrisData(config);
+
+            
+    weights = (somNeuron**)getsom(data, config);
+
+    somScoreResult* result = getscore(data, weights, config);
+    somScore** score = result->scores;
+    int activatedNodes = 0;
+    printf("SOM Settings:\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %.2f\n%19s: %.2f\n\n", "Entries", config->n,
+                    "Neurons", config->nw ,"Map rows", config->map_r, "Map columns", config->map_c, "Radius", config->radius,
+                    "Learning rate", config->alpha, "Neighborhood factor", config->sigma); 
+    for(int i=0;i<config->map_r;i++)
+    {
+        for(int j=0;j<config->map_c;j++)
+        {
+            int c = score[i][j].iclass + 1;
+            if(score[i][j].hasMultipleResult >=0)
+            {
+                activatedNodes++;
             }
-        for(int i=0;i<config.n;i++){
-            int iWinner = predict(data[i], weights, config);
-            scores[iWinner]+=1;
-            predictions[i] = iWinner;
-            }
-         writeAppend(stepId++, weights, config, scores);
+            printf("\033[0%s", getTerminalColorCode(c));
+            printf("%d ", c);
+            printf("\033[0m");
         }
-        config.alpha*=0.99;
-        config.sigma*=0.90;
-        config.radius = max(1, config.radius-1);
+        printf("\n");
     }
+    printf("Activated nodes:%d\n", activatedNodes);
+    
+
+    clear_mem(data, weights, result, config);
 
     
-    int sum=0;
-    int classes =0;
-    for(int i=0;i<config.nw;i++){
-            if(scores[i]){
-                classes++;
-                printf("%d: %d entries\n", i, scores[i]);
-            }
+    
+                //write(weights, config);
+                /* */
+                
+                
+                /* for(int i=0;i<config.n;i++)
+                {
+                    predictions[i]=0;
+                }
 
-        }
+                for(int i=0;i<config.nw;i++)
+                {
+                    scores[i]=0;
+                }
 
-    printf("classes number:%d\n", classes);
+                for(int i=0;i<config.n;i++)
+                {
+                    somNeuron winner = *predict(&data[i], weights, &config);
+                    scores[winner.c]+=1;
+                    predictions[i] = winner.c;
+                }
+
+                int sum=0;
+                int classes =0;
+                for(int i=0;i<config.nw;i++)
+                {
+                    if(scores[i]){
+                        classes++;
+                        //printf("%d: %d entries\n", i, scores[i]);
+                    }
+
+                }
+
+                if(classes >= maxClasses)
+                {
+                    maxClasses = classes;
+                    printf("alpha:%.2f, sigma:%.2f, classes:%d\n", alpha, sigma, classes);
+                    printf("classes number:%d\n", classes);
     printf("\n");
     int validations[3][config.nw];
     for(int i=0;i<3;i++){
@@ -157,8 +162,11 @@ int main()
         }
         printf("\n");
     }
+                } */    
 
-    FILE * fp;
+    
+
+    /* FILE * fp;
     fp = fopen("predictions.data", "w");
     if(fp != NULL){
        for(int i=0;i<config.map_r;i++){
@@ -167,8 +175,9 @@ int main()
         }
     } 
     }
-    fclose(fp);
+    fclose(fp); */
 
 
-    clear_mem(data, weights, config);
+
+    
 }
