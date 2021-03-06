@@ -122,15 +122,21 @@ double neighborhood_function3d(somNeuron* winner, somNeuron* n, double sigma)
     return exp(-(distance_function(wp, np, 3)/(sigma * sigma)));
 }
 
+double absd(double v)
+{
+    return v>0?v:-v;
+}
+
 short updateNeuron(dataVector* v, somNeuron* n, double h, somConfig* config)
 {
-    short flagChange = 0;
+    short stabilized = 1;
     for(int i=0;i<config->p;i++){
         double delta = config->alpha * h *(v->v[i] - n->v[i]);
         n->v[i] += delta;
-        flagChange = (delta > config->changeTrigger) || (delta < -config->changeTrigger) ? 1: flagChange;
+        double d = absd(delta);
+        stabilized = (d < config->stabilizationTrigger) & stabilized;
     }
-    return flagChange;
+    return stabilized;
 }
 
 //Update the 1D weight vector of a neuron adding for each parameter the difference between entry vector parameter and current vector parameter
@@ -227,46 +233,46 @@ void getNeighbours3D(somNeuron* n, somNeuron*** weights, somConfig* config)
 //Update winner neuron and neighbours for 1D map return 1 if at least one neuron was updated 0 otherwise
 short updateNeurons1D(dataVector* v, somNeuron* winner, somNeuron  *weights, somConfig* config)
 {
-    short flagChange = 0;
+    short stabilized = 1;
     if(!winner->neighbours)
     {
         getNeighbours1D(winner, weights, config);
     }
     for(int i=0; i<winner->nc;i++)
     {
-      flagChange = updateNeuron1D(v, winner, winner->neighbours[i], config) || flagChange;         
+      stabilized = updateNeuron1D(v, winner, winner->neighbours[i], config) & stabilized;         
     };
-    return flagChange;
+    return stabilized;
 }
 
 //Update winner neuron and neighbours for 2D map return 1 if at least one neuron was updated 0 otherwise
 short updateNeurons2D(dataVector* v, somNeuron* winner, somNeuron  **weights, somConfig* config)
 {
-    short flagChange = 0;
+    short stabilized = 1;
     if(!winner->neighbours)
     {
         getNeighbours2D(winner, weights, config);
     }
     for(int i=0; i<winner->nc;i++)
     {
-      flagChange = updateNeuron2D(v, winner, winner->neighbours[i], config) || flagChange;         
+      stabilized = updateNeuron2D(v, winner, winner->neighbours[i], config) & stabilized;         
     };
-    return flagChange;
+    return stabilized;
 }
 
 //Update winner neuron and neighbours for 2D map return 1 if at least one neuron was updated 0 otherwise
 short updateNeurons3D(dataVector* v, somNeuron* winner, somNeuron  ***weights, somConfig* config)
 {
-    short flagChange = 0;
+    short stabilized = 1;
     if(!winner->neighbours)
     {
         getNeighbours3D(winner, weights, config);
     }
     for(int i=0; i<winner->nc;i++)
     {
-      flagChange = updateNeuron3D(v, winner, winner->neighbours[i], config) || flagChange;         
+      stabilized = updateNeuron3D(v, winner, winner->neighbours[i], config) & stabilized;         
     };
-    return flagChange;
+    return stabilized;
 }
 
 //Return a random value between a boundary
@@ -421,7 +427,7 @@ void* getsom3D(dataVector* data, somConfig *config, dataBoundary* boundaries)
 
 somConfig* getsomDefaultConfig(){
     somConfig* config = malloc(sizeof(somConfig));
-    config->changeTrigger = 0.02;
+    config->stabilizationTrigger = 0.001;
     config->isMapClosed = 0;
     config->dimension = twoD;
     config->alpha = 0.99;
@@ -431,12 +437,6 @@ somConfig* getsomDefaultConfig(){
     config->radiusDecreaseRate = 3;
     config->initialPercentCoverage = 0.6;
     config->maxEpisodes = 1000;
-}
-
-void initshuffle(int* array, int n){
-    for(int i=0;i<n;i++){
-        array[i] = i;
-    }
 }
 
 short learn1D(dataVector* v, void* weights, somConfig* config)
@@ -532,20 +532,35 @@ void* getsom(dataVector* data, somConfig *config)
     void* weights = initfp(data, config, boundaries);
     somConfig cfg = *config;
     int vectorsToPropose[cfg.n];
-    initshuffle(vectorsToPropose, cfg.n);
-    short again = 1;
+    int stabilizedVectors[cfg.n];
+    for(int i=0;i<cfg.n;i++){
+        vectorsToPropose[i]=i;
+        stabilizedVectors[i]=i;
+    }
     int episode = 0;
-    while(again)
+    int tested[config->n];
+    for(int i=0;i<config->n;i++){
+        tested[i]=0;
+    }
+    while(cfg.n >0 && episode <cfg.maxEpisodes)
     {
-        short hasUpdated = 0;
-        long stepId=cfg.n*episode;
-        for(int i=cfg.n-1;i>=0;i--)
+        int n = cfg.n-1;
+        for(int i=n;i>=0;i--)
         {
             int ivector = (((double)rand()/RAND_MAX)*(i));
-            hasUpdated = learnfp(&data[vectorsToPropose[ivector]], weights, &cfg) || hasUpdated;     
+            int proposed = vectorsToPropose[ivector];
+            tested[proposed] = 1;
+            short hasStabilized = learnfp(&data[proposed], weights, &cfg);
             vectorsToPropose[ivector] = vectorsToPropose[i];
-            vectorsToPropose[i] = i;
+            if(hasStabilized)
+            {               
+                stabilizedVectors[proposed] = n;
+                stabilizedVectors[n] = proposed;
+                n--;
+            }
+            vectorsToPropose[i] = stabilizedVectors[i];
         }
+        cfg.n = n +1;
         cfg.alpha*= cfg.alphaDecreaseRate;
         cfg.sigma*= cfg.sigmaDecreaseRate;
         if(episode>0 && episode%cfg.radiusDecreaseRate == 0){  
@@ -556,7 +571,6 @@ void* getsom(dataVector* data, somConfig *config)
             }         
         }
         episode++;
-        again = hasUpdated;
     }
     printf("Stopped after %d episodes\n", episode);
     return weights;

@@ -52,8 +52,8 @@ typedef struct somConfig{
     int radius;
     //Each n episodes (each data processed once) of learning the radius will decrease -> 3 by default (every 3 episode radius will decrease)
     int radiusDecreaseRate;
-    //A neuron will be considered as stable if the update delta is smaller than the value -> 0.01 by default
-    double changeTrigger;
+    //A neuron will be considered as stable if the update absolute delta fore each parameter is smaller than the value -> 0.001 by default
+    double stabilizationTrigger;
     //The neighborhood initial percentage coverage (0 to 1) -> 0.6 by default
     double initialPercentCoverage;
     // 1 if the map shouldn't have borders and consider that last and first element of a dimension are neighbours, 0 otherwhise -> default = 0
