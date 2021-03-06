@@ -33,8 +33,8 @@ typedef struct somScoreResult
 somConfig* getsomDefaultConfig();
 //Get Initialized weights vectors for a specific dataset and a specific config;
 void* getsom(dataVector* data, somConfig *config);
-//Append the current state of SOM neurons (one line by neuron) using provided step id
-void writeAppend(long stepid, somNeuron* weights, somConfig* config, int scores[]);
+//Append the current state of SOM neurons (one line by neuron) using provided step id and score
+void writeAppend(long stepid, somNeuron *weights, somConfig* config, somScoreResult* scoreResult);
 void write(somNeuron* weights, somConfig* config);
 somScoreResult* getscore(dataVector* data, void* weights, somConfig *config);
 //Clear som objects (weighs and score)
