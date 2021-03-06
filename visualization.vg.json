@@ -154,33 +154,35 @@
       "name": "xscale-iris",
       "type": "linear",
       "domain": {"data": "iris", "field": "x"},
-      "range": "width"
+      "zero": false,
+      "range": [{"signal": "width*0.05"}, {"signal": "width*0.95"}]
     },
     {
       "name": "yscale-iris",
       "type": "linear",
       "domain": {"data": "iris", "field": "y"},
-      "range": "height",
+      "range": [{"signal": "height*0.05"}, {"signal": "height*0.95"}],
       "zero": false
     },
     {
       "name": "xscale",
       "type": "linear",
       "domain": {"data": "neurons", "field": "x"},
-      "range": "width"
-    },
-    {
-      "name": "xscale-grid",
-      "type": "linear",
-      "domain": {"data": "neurons", "field": "x-grid"},
+      "zero": false,
       "range": [{"signal": "width*0.05"}, {"signal": "width*0.95"}]
     },
     {
       "name": "yscale",
       "type": "linear",
       "domain": {"data": "neurons", "field": "y"},
-      "range": "height",
+      "range": [{"signal": "height*0.95"}, {"signal": "height*0.05"}],
       "zero": false
+    },
+    {
+      "name": "xscale-grid",
+      "type": "linear",
+      "domain": {"data": "neurons", "field": "x-grid"},
+      "range": [{"signal": "width*0.05"}, {"signal": "width*0.95"}]
     },
     {
       "name": "yscale-grid",
