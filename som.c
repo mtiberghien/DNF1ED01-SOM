@@ -1053,7 +1053,13 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p, ma
     int x = n->c;
     int y = dimension>oneD? n->r:-1;
     int z = dimension>twoD? n->b:-1;
-    int s = score ? score->totalEntries : -1;
+    int s = -1;
+    int class = -1;
+    if(score)
+    {
+        s = score->totalEntries;
+        class = score->maxClass;
+    }
     for(int j=0;j<p;j++){
         fprintf(fp, "%f", n->v[j]);
         if(j<p-1)
@@ -1061,17 +1067,7 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p, ma
             fputs(",", fp);
         }
     }
-    fprintf(fp, "];%d;%d;%d;%ld;%d\n", x,y,z , stepId, s);
-}
-
-char* getsomFileName(mapDimension dimension)
-{
-    switch (dimension)
-    {
-        case oneD: return "som1D.data";
-        case twoD: return "som2D.data";
-        case threeD: return "som3D.data";
-    }
+    fprintf(fp, "];%d;%d;%d;%ld;%d;%d\n", x,y,z , stepId, s, class );
 }
 
 void writeNeurons1D(FILE* fp, void* weights, void* scores, long stepId, somConfig* config)
@@ -1122,6 +1118,16 @@ void wirteNeurons(FILE *fp, void *weights, somConfig* config, long stepid, somSc
         default: writefp = writeNeurons2D;break;
     }
     writefp(fp, weights, scoreResult ? scoreResult->scores : NULL, stepid,config);
+}
+
+char* getsomFileName(mapDimension dimension)
+{
+    switch (dimension)
+    {
+        case oneD: return "som1D.data";
+        case twoD: return "som2D.data";
+        case threeD: return "som3D.data";
+    }
 }
 
 void writeAppend(long stepid, somNeuron *weights, somConfig* config, somScoreResult* scoreResult)
