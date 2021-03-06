@@ -14,14 +14,18 @@ typedef struct somNeuron{
 
 typedef struct somScore
 {
-    int iclass;
-    short hasMultipleResult;
+    int totalEntries;
+    int maxClass;
+    int secondClass;
+    //-1 means no class related, 0 one class related, 1 many class related
+    short status;
     int* scores;
 }somScore;
 
 typedef struct somScoreResult
 {
-    int nclasses;
+    int nClasses;
+    int nActivatedNodes;
     void* scores;
 }somScoreResult;
 
@@ -33,4 +37,10 @@ void* getsom(dataVector* data, somConfig *config);
 void writeAppend(long stepid, somNeuron* weights, somConfig* config, int scores[]);
 void write(somNeuron* weights, somConfig* config);
 somScoreResult* getscore(dataVector* data, void* weights, somConfig *config);
-void clear_mem(dataVector* data, void* weights,  somScoreResult* score,somConfig *config);
+//Clear som objects (weighs and score)
+void clear_mem(void* weights,  somScoreResult* score,somConfig *config);
+//Clear somConfig object
+void clear_config(somConfig* config);
+void displayConfig(somConfig* config);
+void displayScore(somScoreResult* scoreResult, somConfig* config);
+void resetConfig(somConfig* config);

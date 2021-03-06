@@ -56,8 +56,6 @@ typedef struct somConfig{
     double stabilizationTrigger;
     //The neighborhood initial percentage coverage (0 to 1) -> 0.6 by default
     double initialPercentCoverage;
-    // 1 if the map shouldn't have borders and consider that last and first element of a dimension are neighbours, 0 otherwhise -> default = 0
-    short isMapClosed;
     // The neurons should stabilize automatically (speed related to data volume and changeTrigger). This parameter force the end of learning after n episodes.
     // value <0 means no limit -> 1000 by default
     int maxEpisodes;
@@ -78,3 +76,5 @@ double max(double x, double y);
 double normalizeVector(double* v, int p);
 //Denormalize the vector using p parameters and the norm
 void denormalizeVector(double* v, int p, double norm);
+//Free data memory
+void clear_data(dataVector* data, somConfig* config);

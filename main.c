@@ -14,55 +14,27 @@ char* getIrisLabel(int index){
         return "          Other:";
 }
 
-char* getTerminalColorCode(int index){
-    switch(index){
-        //red
-        case 1: return ";31m";
-        //yellow
-        case 2: return ";33m";
-        //blue
-        case 3: return ";34m";
-    }
-    //default
-    return "m";
-}
-
 int main()
 {
     
     somNeuron** weights;
     somConfig *config = getsomDefaultConfig();
     dataVector *data = getIrisData(config);
-
-            
-    weights = (somNeuron**)getsom(data, config);
-
-    somScoreResult* result = getscore(data, weights, config);
-    somScore** score = result->scores;
-    int activatedNodes = 0;
-    printf("SOM Settings:\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %d\n%19s: %.2f\n%19s: %.2f\n\n", "Entries", config->n,
-                    "Neurons", config->nw ,"Map rows", config->map_r, "Map columns", config->map_c, "Radius", config->radius,
-                    "Learning rate", config->alpha, "Neighborhood factor", config->sigma); 
-    for(int i=0;i<config->map_r;i++)
+    for(int i=oneD;i<=threeD;i++)
     {
-        for(int j=0;j<config->map_c;j++)
-        {
-            int c = score[i][j].iclass + 1;
-            if(score[i][j].hasMultipleResult >=0)
-            {
-                activatedNodes++;
-            }
-            printf("\033[0%s", getTerminalColorCode(c));
-            printf("%d ", c);
-            printf("\033[0m");
-        }
-        printf("\n");
+        config->dimension=i;
+        weights = (somNeuron**)getsom(data, config);
+
+        somScoreResult* result = getscore(data, weights, config);
+        int activatedNodes = 0;
+        displayScore(result, config);
+        
+        resetConfig(config);
+        clear_mem(weights, result, config);
     }
-    printf("Activated nodes:%d\n", activatedNodes);
-    
-
-    clear_mem(data, weights, result, config);
-
+            
+    clear_data(data, config);
+    clear_config(config);
     
     
                 //write(weights, config);

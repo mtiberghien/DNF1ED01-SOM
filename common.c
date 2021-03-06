@@ -1,4 +1,6 @@
 #include <math.h>
+#include "include/common.h"
+#include <stdlib.h>
 
 // Return min between 2 doubles
 double min(double x, double y)
@@ -26,5 +28,16 @@ double normalizeVector(double* v, int p){
 void denormalizeVector(double* v, int p, double norm){
     for(int i=0;i<p;i++){
         v[i] *= norm;
+    }
+}
+
+void clear_data(dataVector* data, somConfig* config)
+{
+    if(data)
+    {
+        for(int i = 0; i<config->n;i++)
+        {
+            free(data[i].v);
+        }
     }
 }

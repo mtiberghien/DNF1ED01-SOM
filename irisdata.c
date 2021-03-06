@@ -63,4 +63,3 @@ dataVector* getIrisData(somConfig *config){
 
     return data;
 }
-
