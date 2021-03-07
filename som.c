@@ -424,7 +424,7 @@ void* getsom3D(dataVector* data, somConfig *config, dataBoundary* boundaries)
 
 somConfig* getsomDefaultConfig(){
     somConfig* config = malloc(sizeof(somConfig));
-    config->stabilizationTrigger = 0.02;
+    config->stabilizationTrigger = 0.03;
     config->dimension = twoD;
     config->alpha = 0.99;
     config->sigma = 0.99;
@@ -751,6 +751,38 @@ short hasMultipleResult(int* values, int n)
     return count ==0 ? -1: count >1;   
 }
 
+void initScore(somScore* s, int nClasses)
+{
+    s->scores = malloc(sizeof(int)*nClasses);
+    s->totalEntries = 0;
+    for(int i=0;i<nClasses;i++)
+    {
+        s->scores[i]=0;
+    }
+}
+
+void updateScore(somScore* s, int class)
+{
+    s->scores[class]++;
+    s->totalEntries++;
+}
+
+void updateScoreStats(somScore* s, int nClasses, somScoreResult* scoreResult)
+{
+    s->maxClass = s->secondClass = -1;
+    s->status = hasMultipleResult(s->scores, nClasses);
+    if(s->status >=0)
+    {
+        scoreResult->nActivatedNodes++;
+        s->maxClass = argMax(s->scores, nClasses, -1);
+        if(s->status >0)
+        {
+            s->secondClass = argMax(s->scores, nClasses, s->maxClass);
+        }
+        
+    }
+}
+
 void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult)
 {
     somScore* score = (somScore*)malloc(sizeof(somScore) * config->map_c);
@@ -759,35 +791,18 @@ void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     int nClasses = scoreResult->nClasses;
     for(int i=0;i<config->map_c;i++)
     {
-        score[i].scores = malloc(sizeof(int)*nClasses);
-        for(int j=0;j<nClasses;j++)
-        {
-            score[i].scores[j]=0;
-        }
+        initScore(&score[i], nClasses);
     }
     for(int i=0;i<config->n;i++)
     {
         dataVector v = data[i];
         somNeuron* winner = find_winner1D(&v, weights, config->nw, config->p);
-        score[winner->c].scores[v.class]++;
-        score[winner->c].totalEntries++;
+        updateScore(&score[winner->c], v.class);
 
     }
     for(int i=0;i<config->map_c;i++)
     {
-        somScore* s = &score[i];
-        s->maxClass = s->secondClass = -1;
-        s->status = hasMultipleResult(s->scores, nClasses);
-        if(s->status >=0)
-        {
-            scoreResult->nActivatedNodes++;
-            s->maxClass = argMax(s->scores, nClasses, -1);
-            if(s->status >0)
-            {
-                s->secondClass = argMax(s->scores, nClasses, s->maxClass);
-            }
-            
-        }
+        updateScoreStats(&score[i], nClasses, scoreResult);
     }
     scoreResult->scores = score;
 }
@@ -803,37 +818,20 @@ void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult*
         score[i] = (somScore*)malloc(sizeof(somScore)* config->map_c);
         for(int j=0;j<config->map_c;j++)
         {
-            score[i][j].scores = malloc(sizeof(int)*nClasses);
-            for(int k=0;k<nClasses;k++)
-            {
-                score[i][j].scores[k]=0;
-            }
+            initScore(&score[i][j], nClasses);
         }
     }
     for(int i=0;i<config->n;i++)
     {
         dataVector v = data[i];
         somNeuron* winner = find_winner2D(&v, weights, config);
-        score[winner->r][winner->c].scores[v.class]++;
-        score[winner->r][winner->c].totalEntries++;
+        updateScore(&score[winner->r][winner->c], v.class);
     }
     for(int i=0;i<config->map_r;i++)
     {
         for(int j=0;j<config->map_c;j++)
         {
-            somScore* s = &score[i][j];
-            s->maxClass = s->secondClass = -1;
-            s->status = hasMultipleResult(s->scores, nClasses);
-            if(s->status >=0)
-            {
-                scoreResult->nActivatedNodes++;
-                s->maxClass = argMax(s->scores, nClasses, -1);
-                if(s->status >0)
-                {
-                    s->secondClass = argMax(s->scores, nClasses, s->maxClass);
-                }
-                
-            }
+            updateScoreStats(&score[i][j], nClasses, scoreResult);
         }
         
     }
@@ -854,11 +852,7 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
             score[i][j] = malloc(sizeof(somScore)*config->map_c);
             for(int k=0;k<config->map_c;k++)
             {
-                score[i][j][k].scores= malloc(sizeof(int)*nClasses);
-                for(int l=0;l<nClasses;l++)
-                {
-                    score[i][j][k].scores[l]=0;
-                }
+                initScore(&score[i][j][k], nClasses);
             }
         }
     }
@@ -866,8 +860,7 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     {
         dataVector v = data[i];
         somNeuron* winner = find_winner3D(&v, weights, config);
-        score[winner->b][winner->r][winner->c].scores[v.class]++;
-        score[winner->b][winner->r][winner->c].totalEntries++;
+        updateScore(&score[winner->b][winner->r][winner->c],v.class);
     }
     for(int i=0;i<config->map_b;i++)
     {
@@ -876,19 +869,7 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
 
             for(int k=0;k<config->map_c;k++)
             {
-                somScore* s = &score[i][j][k];
-                s->maxClass = s->secondClass = -1;
-                s->status = hasMultipleResult(s->scores, nClasses);
-                if(s->status >=0)
-                {
-                    scoreResult->nActivatedNodes++;
-                    s->maxClass = argMax(s->scores, nClasses, -1);
-                    if(s->status >0)
-                    {
-                        s->secondClass = argMax(s->scores, nClasses, s->maxClass);
-                    }
-                    
-                }
+                updateScoreStats(&score[i][j][k],nClasses, scoreResult);
             }
             
         }
