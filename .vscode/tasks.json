@@ -4,7 +4,7 @@
 		{
 			"type": "cppbuild",
 			"label": "C/C++: gcc générer le fichier actif",
-			"command": "/usr/bin/gcc-9",
+			"command": "/usr/bin/gcc",
 			"args": [
 				"-g",
 				"${workspaceFolder}/*.c",
@@ -22,7 +22,7 @@
 				"kind": "build",
 				"isDefault": true
 			},
-			"detail": "compilateur : /usr/bin/gcc-9"
+			"detail": "compilateur : /usr/bin/gcc"
 		}
 	]
 }

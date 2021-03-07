@@ -1,0 +1,403 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "width": 600,
+  "height": 600,
+  "background": "black",
+  "signals": [
+    {"name": "center", "init": "1.5"},
+    {
+      "name": "selectedNeuron",
+      "init": "{}",
+      "on": [
+        {"events": "@neuron:mouseover", "update": "datum"},
+        {"events": "@neuron:mouseout", "update": "{}"}
+      ]
+    },
+    {
+      "name": "current_step",
+      "value": -1,
+      "bind": {"input": "range", "min": -1, "max": 2549, "step": 1},
+      "on": [
+        {
+          "events": "timer[50]",
+          "update": "autoplay ? (current_step >= steps[1] ? -1 :current_step + 1 ): current_step"
+        }
+      ]
+    },
+    {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
+    {"name": "colors", "value": ["#77A7FB", "#E57368", "#FBCB43"]},
+    {"name": "size", "init": "min(width,height)/3"},
+    {
+      "name": "angle_HOR",
+      "on": [
+        {
+          "events": {
+            "source": "view",
+            "type": "mousemove",
+            "filter": "event.buttons === 1"
+          },
+          "update": "rotation_HOR + (event.movementX > 0 ? -5 : event.movementX < 0 ? 5 : 0)"
+        }
+      ]
+    },
+    {
+      "name": "validAngle_HOR",
+      "update": "angle_HOR % 360 <0 ? 360 + angle_HOR % 360 : angle_HOR % 360"
+    },
+    {
+      "name": "angle_VER",
+      "on": [
+        {
+          "events": {
+            "source": "view",
+            "type": "mousemove",
+            "filter": "event.buttons === 1"
+          },
+          "update": "rotation_VER + (event.movementY < 0 ? 5 : event.movementY > 0 ? -5 : 0)"
+        }
+      ]
+    },
+    {
+      "name": "validAngle_VER",
+      "update": "angle_VER % 360 <0 ? 360 + angle_VER % 360 : angle_VER % 360"
+    },
+    {
+      "name": "rotation_HOR",
+      "value": 45,
+      "bind": {"input": "range", "min": 0, "max": 360, "step": 1},
+      "on": [
+        {"events": {"signal": "validAngle_HOR"}, "update": "validAngle_HOR"}
+      ]
+    },
+    {
+      "name": "rotation_VER",
+      "value": 65,
+      "bind": {"input": "range", "min": 0, "max": 360, "step": 1},
+      "on": [
+        {"events": {"signal": "validAngle_VER"}, "update": "validAngle_VER"}
+      ]
+    },
+    {
+      "name": "scale",
+      "value": 1,
+      "bind": {"input": "range", "min": 0, "max": 2, "step": 0.1},
+      "on": [
+        {
+          "events": "view:mousewheel",
+          "update": "max(0, min(2, scale + (event.wheelDelta > 0 ? 0.1 : -0.1)))"
+        }
+      ]
+    },
+    {
+      "name": "qrAngle_HOR",
+      "init": "PI*rotation_HOR/360.0",
+      "on": [
+        {
+          "events": {"signal": "rotation_HOR"},
+          "update": "PI*rotation_HOR/360.0"
+        }
+      ]
+    },
+    {
+      "name": "qrAngle_VER",
+      "init": "PI*rotation_VER/360.0",
+      "on": [
+        {
+          "events": {"signal": "rotation_VER"},
+          "update": "PI*rotation_VER/360.0"
+        }
+      ]
+    },
+    {"name": "qrw0", "update": "cos(qrAngle_VER)"},
+    {"name": "qrw1", "update": "cos(qrAngle_HOR)"},
+    {"name": "qrx0", "update": "sin(qrAngle_VER)"},
+    {"name": "qrz1", "update": "sin(qrAngle_HOR)"},
+    {
+      "name": "q",
+      "update": "{x:qrx0*qrw1, y:-qrx0*qrz1, z:qrw0*qrz1, w: qrw0*qrw1}"
+    },
+    {"name": "q_1", "update": "{x:-q.x, y:-q.y, z: -q.z, w: q.w}"},
+    {"name": "isYZBack", "update": "{z: 2*(q.x * q.z) - 2*(q.w * q.y)}.z < 0"},
+    {"name": "isXZBack", "update": "{z: 2*(q.y * q.z) + 2 *(q.w * q.x)}.z < 0"},
+    {
+      "name": "isXYBack",
+      "update": "{z: (q.z*q.z) - (q.y*q.y) - (q.x*q.x) + (q.w*q.w)}.z < 0"
+    }
+  ],
+  "legends": [
+    {
+      "orient": "right",
+      "fill": "color",
+      "labelColor": "#fff",
+      "encode": {
+        "labels": {"update": {"text": {"signal": "scale('label',datum.value)"}}}
+      }
+    }
+  ],
+  "data": [
+    {
+      "name": "labels",
+      "values": [
+        {"id": -1, "name": "None"},
+        {"id": 0, "name": "Iris-setosa"},
+        {"id": 1, "name": "Iris-versicolor"},
+        {"id": 2, "name": "Iris-virginica"}
+      ]
+    },
+    {
+      "name": "neurons",
+      "format": {
+        "type": "dsv",
+        "delimiter": ";",
+        "parse": {
+          "x": "number",
+          "y": "number",
+          "z": "number",
+          "step": "number",
+          "score": "number",
+          "secondary": "number",
+          "class": "number"
+        },
+        "header": [
+          "vector",
+          "x",
+          "y",
+          "z",
+          "step",
+          "score",
+          "class",
+          "secondary",
+          "entries"
+        ]
+      },
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som3D.data?token=ASL2ZNLJUSIBWKMQXHYHXFDAJY32S",
+      "transform": [
+        {"type": "extent", "signal": "steps", "field": "step"},
+        {"type": "extent", "signal": "scores", "field": "score"},
+        {"type": "filter", "expr": "datum.step === current_step"},
+        {
+          "type": "formula",
+          "expr": "split(replace(replace(datum.vector, '[',''),']',''),',')",
+          "as": "vector"
+        },
+        {
+          "type": "formula",
+          "expr": "[toNumber(datum.vector[0]),toNumber(datum.vector[1]),toNumber(datum.vector[2]),toNumber(datum.vector[3])]",
+          "as": "vector"
+        },
+        {
+          "type": "formula",
+          "expr": "{x:datum.x, y:datum.y,z:datum.z}",
+          "as": "neuron"
+        },
+        {
+          "type": "formula",
+          "expr": "datum.neuron.x+'.'+datum.neuron.y+'.'+datum.neuron.z",
+          "as": "id"
+        }
+      ]
+    },
+    {
+      "name": "projection",
+      "source": "neurons",
+      "transform": [
+        {
+          "type": "formula",
+          "expr": "{x:datum.x -center, y: datum.y- center, z:datum.z -center, w:0}",
+          "as": "qp"
+        },
+        {
+          "type": "formula",
+          "expr": "{x:q.w * datum.qp.x + q.y*datum.qp.z- q.z * datum.qp.y, y:q.w * datum.qp.y - q.x * datum.qp.z  + q.z*datum.qp.x, z:q.w * datum.qp.z  + q.x*datum.qp.y - q.y * datum.qp.x, w: -q.x * datum.qp.x - q.y * datum.qp.y - q.z * datum.qp.z }",
+          "as": "q1"
+        },
+        {
+          "type": "formula",
+          "expr": "{x:datum.q1.w * q_1.x + datum.q1.x * q_1.w + datum.q1.y * q_1.z - datum.q1.z * q_1.y, y:datum.q1.w * q_1.y - datum.q1.x * q_1.z + datum.q1.y * q_1.w + datum.q1.z * q_1.x}",
+          "as": "q2"
+        },
+        {"type": "formula", "expr": "(datum.q2.x)", "as": "px"},
+        {"type": "formula", "expr": "(datum.q2.y)", "as": "py"}
+      ]
+    },
+    {
+      "name": "dimensions",
+      "source": "neurons",
+      "transform": [
+        {
+          "type": "aggregate",
+          "fields": ["x", "y", "z"],
+          "ops": ["max", "max", "max"],
+          "as": ["dx", "dy", "dz"]
+        },
+        {
+          "type": "formula",
+          "expr": "[datum.dx+1, datum.dy+1, datum.dz+1]",
+          "as": "d"
+        }
+      ]
+    },
+    {
+      "name": "links",
+      "source": "neurons",
+      "transform": [
+        {
+          "type": "project",
+          "fields": ["neuron", "id"],
+          "as": ["source", "s_id"]
+        },
+        {"type": "formula", "expr": "data('dimensions')[0].d", "as": "dim"},
+        {
+          "type": "formula",
+          "expr": "[min(datum.dim[0]-1,datum.source.x+1)+'.'+datum.source.y +'.'+datum.source.z,datum.source.x+'.'+min(datum.dim[1]-1,datum.source.y+1)+'.'+datum.source.z,datum.source.x+'.'+datum.source.y+'.'+min(datum.dim[2]-1,datum.source.z+1)]",
+          "as": "target"
+        },
+        {"type": "flatten", "fields": ["target"]},
+        {
+          "type": "lookup",
+          "from": "neurons",
+          "key": "id",
+          "fields": ["s_id"],
+          "values": ["x", "y", "z"],
+          "as": ["s_x", "s_y", "s_z"]
+        },
+        {
+          "type": "lookup",
+          "from": "neurons",
+          "key": "id",
+          "fields": ["target"],
+          "values": ["x", "y", "z", "neuron"],
+          "as": ["t_x", "t_y", "t_z", "target"]
+        }
+      ]
+    },
+    {
+      "name": "projection_l",
+      "source": "links",
+      "transform": [
+        {
+          "type": "formula",
+          "expr": "[{x:datum.s_x - center, y: datum.s_y- center, z:datum.s_z-center, w:0},{x:datum.t_x-center, y: datum.t_y-center, z:datum.t_z-center, w:0}]",
+          "as": "qp"
+        },
+        {
+          "type": "formula",
+          "expr": "[{x:q.w * datum.qp[0].x + q.y*datum.qp[0].z- q.z * datum.qp[0].y, y:q.w * datum.qp[0].y - q.x * datum.qp[0].z  + q.z*datum.qp[0].x, z:q.w * datum.qp[0].z  + q.x*datum.qp[0].y - q.y * datum.qp[0].x, w: -q.x * datum.qp[0].x - q.y * datum.qp[0].y - q.z * datum.qp[0].z },{x:q.w * datum.qp[1].x + q.y*datum.qp[1].z- q.z * datum.qp[1].y, y:q.w * datum.qp[1].y - q.x * datum.qp[1].z  + q.z*datum.qp[1].x, z:q.w * datum.qp[1].z  + q.x*datum.qp[1].y - q.y * datum.qp[1].x, w: -q.x * datum.qp[1].x - q.y * datum.qp[1].y - q.z * datum.qp[1].z }]",
+          "as": "q1"
+        },
+        {
+          "type": "formula",
+          "expr": "[{x:datum.q1[0].w * q_1.x + datum.q1[0].x * q_1.w + datum.q1[0].y * q_1.z - datum.q1[0].z * q_1.y, y:datum.q1[0].w * q_1.y - datum.q1[0].x * q_1.z + datum.q1[0].y * q_1.w + datum.q1[0].z * q_1.x},{x:datum.q1[1].w * q_1.x + datum.q1[1].x * q_1.w + datum.q1[1].y * q_1.z - datum.q1[1].z * q_1.y, y:datum.q1[1].w * q_1.y - datum.q1[1].x * q_1.z + datum.q1[1].y * q_1.w + datum.q1[1].z * q_1.x}]",
+          "as": "q2"
+        },
+        {"type": "formula", "expr": "(datum.q2[0].x)", "as": "psx"},
+        {"type": "formula", "expr": "(datum.q2[0].y)", "as": "psy"},
+        {"type": "formula", "expr": "(datum.q2[1].x)", "as": "ptx"},
+        {"type": "formula", "expr": "(datum.q2[1].y)", "as": "pty"}
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "xscale",
+      "type": "linear",
+      "domain": [-1, 1],
+      "range": [
+        {"signal": "width/2 - (0.5*size*scale)"},
+        {"signal": "width/2 + (0.5*size*scale)"}
+      ]
+    },
+    {
+      "name": "yscale",
+      "type": "linear",
+      "domain": [-1, 1],
+      "range": [
+        {"signal": "height/2 - (0.5*size*scale)"},
+        {"signal": "height/2 + (0.5*size*scale)"}
+      ]
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "domain": {"data": "labels", "field": "id", "sort": true},
+      "range": ["#555", "red", "yellow", "blue"]
+    },
+    {
+      "name": "score",
+      "type": "linear",
+      "domain": {"signal": "scores"},
+      "range": [50, 300]
+    },
+    {
+      "name": "label",
+      "type": "ordinal",
+      "domain": {"data": "labels", "field": "id"},
+      "range": {"data": "labels", "field": "name"}
+    }
+  ],
+  "marks": [
+    {
+      "type": "text",
+      "encode": {
+        "enter": {
+          "fontSize": {"value": 14},
+          "fontWeight": {"value": "bold"},
+          "xc": {"signal": "width/2"},
+          "yc": {"value": 15},
+          "baseline": {"value": "top"},
+          "align": {"value": "center"},
+          "fill": {"value": "#eee"}
+        },
+        "update": {"text": {"signal": "'Neuron map: ' + current_step"}}
+      }
+    },
+    {
+      "type": "rule",
+      "from": {"data": "projection_l"},
+      "encode": {
+        "enter": {"stroke": {"value": "#bbb"}, "strokeWidth": {"value": 0.5}},
+        "update": {
+          "x": {"field": "psx", "scale": "xscale"},
+          "y": {"field": "psy", "scale": "yscale"},
+          "x2": {"field": "ptx", "scale": "xscale"},
+          "y2": {"field": "pty", "scale": "yscale"}
+        }
+      }
+    },
+    {
+      "type": "symbol",
+      "name": "neuron",
+      "from": {"data": "projection"},
+      "encode": {
+        "enter": {"stroke": {"field": "secondary", "scale": "color"}},
+        "update": {
+          "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
+          "size": [{"field": "score", "scale": "score", "mult": 1.5}],
+          "fill": [{"field": "class", "scale": "color"}],
+          "xc": [{"field": "px", "scale": "xscale"}],
+          "yc": [{"field": "py", "scale": "yscale"}]
+        }
+      }
+    },
+    {
+      "type": "text",
+      "from": {"data": "neuron"},
+      "encode": {
+        "enter": {
+          "fill": {"value": "white"},
+          "text": {"field": "datum.score"},
+          "baseline": {"value": "bottom"},
+          "align": {"value": "right"}
+        },
+        "update": {
+          "xc": {
+            "field": "xc",
+            "offset": {"signal": "-sqrt(scale('score', datum.datum.score))"}
+          },
+          "yc": {"field": "yc"},
+          "opacity": {"signal": "datum.datum.id === selectedNeuron.id ? 1 :0"}
+        }
+      }
+    }
+  ]
+}

@@ -6,13 +6,20 @@
   "signals": [
     {
       "name": "current_step",
-      "value": 50,
-      "bind": {"input": "range", "min": -1, "max": 2549, "step": 1}
+      "value": -1,
+      "bind": {"input": "range", "min": -1, "max": 2549, "step": 1},
+      "on": [
+        {
+          "events": "timer[10]",
+          "update": "autoplay ? (current_step >= steps[1] ? -1 :current_step + 1 ): current_step"
+        }
+      ]
     },
     {"name": "showgrid", "value": false, "bind": {"input": "checkbox"}},
     {"name": "showrealdata", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showneurons", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showlinks", "value": false, "bind": {"input": "checkbox"}},
+    {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
     {
       "name": "selectedNeuron",
       "init": "{}",
@@ -186,8 +193,8 @@
           "from": "neurons",
           "key": "id",
           "fields": ["target"],
-          "values": ["x", "y", "z"],
-          "as": ["t_x", "t_y", "t_z"]
+          "values": ["x", "y", "z", "neuron"],
+          "as": ["t_x", "t_y", "t_z", "target"]
         }
       ]
     }
@@ -302,7 +309,7 @@
         },
         "update": {
           "text": {
-            "signal": "showgrid ? 'Neuron map':'K-Means step: ' + current_step"
+            "signal": "(showgrid ? 'Neuron map: ':'K-Means step: ') + current_step"
           }
         }
       }
@@ -342,19 +349,19 @@
           "strokeWidth": {"value": 0.5},
           "opacity": {"signal": "showlinks && showneurons ? 1 :0"},
           "x": [
-            {"test": "showgrid", "field": "x", "scale": "xscale-grid"},
+            {"test": "showgrid", "field": "source.x", "scale": "xscale-grid"},
             {"field": "s_x", "scale": "xscale"}
           ],
           "y": [
-            {"test": "showgrid", "field": "y", "scale": "yscale-grid"},
+            {"test": "showgrid", "field": "source.y", "scale": "yscale-grid"},
             {"field": "s_y", "scale": "yscale"}
           ],
           "x2": [
-            {"test": "showgrid", "field": "t_x-grid", "scale": "xscale-grid"},
+            {"test": "showgrid", "field": "target.x", "scale": "xscale-grid"},
             {"field": "t_x", "scale": "xscale"}
           ],
           "y2": [
-            {"test": "showgrid", "field": "t_y-grid", "scale": "yscale-grid"},
+            {"test": "showgrid", "field": "target.y", "scale": "yscale-grid"},
             {"field": "t_y", "scale": "yscale"}
           ]
         }

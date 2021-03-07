@@ -421,20 +421,6 @@ void* getsom3D(dataVector* data, somConfig *config, dataBoundary* boundaries)
     return weights;
 }
 
-somConfig* getsomDefaultConfig(){
-    somConfig* config = malloc(sizeof(somConfig));
-    config->normalize = 1;
-    config->stabilizationTrigger = 0.01;
-    config->dimension = twoD;
-    config->alpha = 0.99;
-    config->sigma = 0.99;
-    config->alphaDecreaseRate=0.99;
-    config->sigmaDecreaseRate=0.90;
-    config->radiusDecreaseRate = 3;
-    config->initialPercentCoverage = 0.6;
-    config->maxEpisodes = 1000;
-}
-
 short learn1D(dataVector* v, void* weights, somConfig* config)
 {
     somNeuron* winner = find_winner1D(v, weights, config->nw, config->p);
@@ -539,6 +525,20 @@ void clear_score(somScoreResult* score, somConfig* config)
     free(score);   
 }
 
+somConfig* getsomDefaultConfig(){
+    somConfig* config = malloc(sizeof(somConfig));
+    config->normalize = 1;
+    config->stabilizationTrigger = 0.01;
+    config->dimension = twoD;
+    config->alpha = 0.99;
+    config->sigma = 0.99;
+    config->alphaDecreaseRate=0.99;
+    config->sigmaDecreaseRate=0.90;
+    config->radiusDecreaseRate = 3;
+    config->initialPercentCoverage = 0.6;
+    config->maxEpisodes = 1000;
+}
+
 //Get stabilized som neurons that has been train using provided data and config
 void* getsom(dataVector* data, somConfig *config)
 {
@@ -583,7 +583,6 @@ void* getsom(dataVector* data, somConfig *config)
     int episode = 0;
     int again = 1;
     short hasStabilized;
-    write(weights, config);
     long stepId = 0;
     while(again)
     {
@@ -594,11 +593,7 @@ void* getsom(dataVector* data, somConfig *config)
             int proposed = vectorsToPropose[ivector];
             hasStabilized = learnfp(&data[proposed], weights, &cfg) & hasStabilized;
             vectorsToPropose[ivector] = vectorsToPropose[i];
-            vectorsToPropose[i] = i;
-            somScoreResult* score = getscore(data, weights, &cfg);
-            writeAppend(stepId++, weights, &cfg, score);
-            clearscorefp(score->scores, &cfg);
-            free(score);         
+            vectorsToPropose[i] = i;       
         }
         cfg.alpha*= cfg.alphaDecreaseRate;
         cfg.sigma*= cfg.sigmaDecreaseRate;
