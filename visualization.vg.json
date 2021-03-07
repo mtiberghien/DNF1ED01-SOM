@@ -1,13 +1,13 @@
 {
   "$schema": "https://vega.github.io/schema/vega/v5.json",
-  "width": 400,
-  "height": 300,
+  "width": 800,
+  "height": 600,
   "background": "black",
   "signals": [
     {
       "name": "current_step",
       "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 1449, "step": 1}
+      "bind": {"input": "range", "min": -1, "max": 1649, "step": 1}
     },
     {"name": "showgrid", "value": false, "bind": {"input": "checkbox"}},
     {"name": "showrealdata", "value": false, "bind": {"input": "checkbox"}},
@@ -46,6 +46,18 @@
       "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/iris.data?token=ASL2ZNJMDB3DV54GHZGUJ63AJIKOM"
     },
     {
+      "name": "stats_iris",
+      "source": "iris",
+      "transform": [
+        {
+          "type": "aggregate",
+          "fields": ["sl", "sw", "pl", "pw"],
+          "ops": ["mean", "mean", "mean", "mean"],
+          "as": ["sl", "sw", "pl", "pw"]
+        }
+      ]
+    },
+    {
       "name": "neurons",
       "format": {
         "type": "dsv",
@@ -68,9 +80,10 @@
           "class"
         ]
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNP4A4Z26IT4X6GTWY3AJVE2E",
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNIS3MAH35OS43VNVFTAJXXVE",
       "transform": [
         {"type": "extent", "signal": "steps", "field": "step"},
+        {"type": "extent", "signal": "scores", "field": "score"},
         {"type": "filter", "expr": "datum.step === current_step"},
         {
           "type": "formula",
@@ -101,6 +114,38 @@
           "type": "formula",
           "expr": "datum.neuron.x+'.'+datum.neuron.y+'.'+datum.neuron.z",
           "as": "id"
+        }
+      ]
+    },
+    {
+      "name": "stats_neurons",
+      "source": "neurons",
+      "transform": [
+        {
+          "type": "aggregate",
+          "fields": ["vector[0]", "vector[1]", "vector[2]", "vector[3]"],
+          "ops": ["mean", "mean", "mean", "mean"],
+          "as": ["sl", "sw", "pl", "pw"]
+        },
+        {
+          "type": "formula",
+          "expr": "data('stats_iris')[0].sl/datum.sl",
+          "as": "f_sl"
+        },
+        {
+          "type": "formula",
+          "expr": "data('stats_iris')[0].sw/datum.sw",
+          "as": "f_sw"
+        },
+        {
+          "type": "formula",
+          "expr": "data('stats_iris')[0].pl/datum.pl",
+          "as": "f_pl"
+        },
+        {
+          "type": "formula",
+          "expr": "data('stats_iris')[0].pw/datum.pw",
+          "as": "f_pw"
         }
       ]
     },
@@ -225,6 +270,12 @@
       "type": "ordinal",
       "domain": {"data": "labels", "field": "name"},
       "range": {"data": "labels", "field": "id"}
+    },
+    {
+      "name": "score",
+      "type": "linear",
+      "domain": {"signal": "scores"},
+      "range": [50, 600]
     }
   ],
   "axes": [
@@ -312,7 +363,10 @@
         "enter": {"stroke": {"value": "#555"}},
         "update": {
           "opacity": {"signal": "showneurons ? 1 : 0"},
-          "size": [{"test": "showgrid", "value": 300}, {"value": 150}],
+          "size": [
+            {"test": "showgrid", "field": "score", "scale": "score", "mult": 4},
+            {"field": "score", "scale": "score"}
+          ],
           "fill": {"field": "class", "scale": "color"},
           "xc": [
             {"test": "showgrid", "field": "x-grid", "scale": "xscale-grid"},
