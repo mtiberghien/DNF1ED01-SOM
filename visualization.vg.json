@@ -6,13 +6,21 @@
   "signals": [
     {
       "name": "current_step",
-      "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 1649, "step": 1}
+      "value": 50,
+      "bind": {"input": "range", "min": -1, "max": 2549, "step": 1}
     },
     {"name": "showgrid", "value": false, "bind": {"input": "checkbox"}},
-    {"name": "showrealdata", "value": false, "bind": {"input": "checkbox"}},
+    {"name": "showrealdata", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showneurons", "value": true, "bind": {"input": "checkbox"}},
-    {"name": "showlinks", "value": true, "bind": {"input": "checkbox"}}
+    {"name": "showlinks", "value": false, "bind": {"input": "checkbox"}},
+    {
+      "name": "selectedNeuron",
+      "init": "{}",
+      "on": [
+        {"events": "@neuron:mouseover", "update": "datum"},
+        {"events": "@neuron:mouseout", "update": "{}"}
+      ]
+    }
   ],
   "data": [
     {
@@ -30,7 +38,9 @@
         {"type": "filter", "expr": "isValid(datum.pw)"},
         {"type": "formula", "expr": "datum.pl+datum.pw", "as": "x"},
         {"type": "formula", "expr": "datum.sl+datum.sw", "as": "y"},
-        {"type": "formula", "expr": "scale('id', datum.class)", "as": "class"}
+        {"type": "formula", "expr": "scale('id', datum.class)", "as": "class"},
+        {"type": "identifier", "as": "id"},
+        {"type": "formula", "expr": "datum.id -1", "as": "id"}
       ],
       "format": {
         "type": "csv",
@@ -44,18 +54,6 @@
         "delimiter": ","
       },
       "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/iris.data?token=ASL2ZNJMDB3DV54GHZGUJ63AJIKOM"
-    },
-    {
-      "name": "stats_iris",
-      "source": "iris",
-      "transform": [
-        {
-          "type": "aggregate",
-          "fields": ["sl", "sw", "pl", "pw"],
-          "ops": ["mean", "mean", "mean", "mean"],
-          "as": ["sl", "sw", "pl", "pw"]
-        }
-      ]
     },
     {
       "name": "neurons",
@@ -77,7 +75,8 @@
           "z-grid",
           "step",
           "score",
-          "class"
+          "class",
+          "entries"
         ]
       },
       "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNIS3MAH35OS43VNVFTAJXXVE",
@@ -118,34 +117,24 @@
       ]
     },
     {
-      "name": "stats_neurons",
+      "name": "entries",
       "source": "neurons",
       "transform": [
-        {
-          "type": "aggregate",
-          "fields": ["vector[0]", "vector[1]", "vector[2]", "vector[3]"],
-          "ops": ["mean", "mean", "mean", "mean"],
-          "as": ["sl", "sw", "pl", "pw"]
-        },
+        {"type": "filter", "expr": "datum.id === selectedNeuron.id"},
+        {"type": "project", "fields": ["entries"]},
         {
           "type": "formula",
-          "expr": "data('stats_iris')[0].sl/datum.sl",
-          "as": "f_sl"
+          "expr": "split(replace(replace(datum.entries, '[',''),']',''),',')",
+          "as": "entries"
         },
+        {"type": "flatten", "fields": ["entries"]},
+        {"type": "formula", "expr": "toNumber(datum.entries)", "as": "entries"},
         {
-          "type": "formula",
-          "expr": "data('stats_iris')[0].sw/datum.sw",
-          "as": "f_sw"
-        },
-        {
-          "type": "formula",
-          "expr": "data('stats_iris')[0].pl/datum.pl",
-          "as": "f_pl"
-        },
-        {
-          "type": "formula",
-          "expr": "data('stats_iris')[0].pw/datum.pw",
-          "as": "f_pw"
+          "type": "lookup",
+          "from": "iris",
+          "key": "id",
+          "fields": ["entries"],
+          "values": ["x", "y"]
         }
       ]
     },
@@ -320,10 +309,23 @@
       "type": "symbol",
       "from": {"data": "iris"},
       "encode": {
-        "enter": {"stroke": {"value": "#555"}},
+        "enter": {"stroke": {"value": "#555"}, "size": {"value": 30}},
         "update": {
           "opacity": {"signal": "showrealdata && !showgrid ? 0.5 : 0"},
           "fill": {"field": "class", "scale": "color"},
+          "xc": {"field": "x", "scale": "xscale-iris"},
+          "yc": {"field": "y", "scale": "yscale-iris"}
+        }
+      }
+    },
+    {
+      "type": "symbol",
+      "from": {"data": "entries"},
+      "encode": {
+        "enter": {"stroke": {"value": "#555"}, "size": {"value": 30}},
+        "update": {
+          "opacity": {"signal": "showrealdata && !showgrid ? 0.5 : 0"},
+          "fill": {"value": "white"},
           "xc": {"field": "x", "scale": "xscale-iris"},
           "yc": {"field": "y", "scale": "yscale-iris"}
         }
@@ -358,6 +360,7 @@
     },
     {
       "type": "symbol",
+      "name": "neuron",
       "from": {"data": "neurons"},
       "encode": {
         "enter": {"stroke": {"value": "#555"}},
@@ -367,7 +370,10 @@
             {"test": "showgrid", "field": "score", "scale": "score", "mult": 4},
             {"field": "score", "scale": "score"}
           ],
-          "fill": {"field": "class", "scale": "color"},
+          "fill": [
+            {"test": "selectedNeuron.id == datum.id", "value": "white"},
+            {"field": "class", "scale": "color"}
+          ],
           "xc": [
             {"test": "showgrid", "field": "x-grid", "scale": "xscale-grid"},
             {"field": "x", "scale": "xscale"}
@@ -376,6 +382,29 @@
             {"test": "showgrid", "field": "y-grid", "scale": "yscale-grid"},
             {"field": "y", "scale": "yscale"}
           ]
+        }
+      }
+    },
+    {
+      "type": "text",
+      "from": {"data": "neuron"},
+      "encode": {
+        "enter": {
+          "fill": {"value": "white"},
+          "text": {"field": "datum.score"},
+          "baseline": {"value": "bottom"},
+          "align": {"value": "right"}
+        },
+        "update": {
+          "xc": {
+            "field": "xc",
+            "offset": {
+              "signal": "-sqrt(scale('score', datum.datum.score)/2)",
+              "mult": {"signal": "showgrid ? 2:1"}
+            }
+          },
+          "yc": {"field": "yc"},
+          "opacity": {"signal": "datum.datum.id === selectedNeuron.id ? 1 :0"}
         }
       }
     }

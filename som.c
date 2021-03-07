@@ -1035,10 +1035,12 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p, ma
     int z = dimension>twoD? n->b:-1;
     int s = -1;
     int class = -1;
+    int class2 = -1;
     if(score)
     {
         s = score->totalEntries;
         class = score->maxClass;
+        class2 = score->secondClass;
     }
     for(int i=0;i<p;i++){
         fprintf(fp, "%f", n->v[i]);
@@ -1047,7 +1049,7 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p, ma
             fputs(",", fp);
         }
     }
-    fprintf(fp, "];%d;%d;%d;%ld;%d;%d", x,y,z , stepId, s, class );
+    fprintf(fp, "];%d;%d;%d;%ld;%d;%d;%d", x,y,z , stepId, s, class,  class2);
     fputs(";[", fp);
     int limit = s-1;
     for(int i=0;i<s;i++)
