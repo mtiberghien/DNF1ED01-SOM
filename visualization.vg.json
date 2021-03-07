@@ -1,13 +1,13 @@
 {
   "$schema": "https://vega.github.io/schema/vega/v5.json",
-  "width": 800,
-  "height": 600,
+  "width": 400,
+  "height": 300,
   "background": "black",
   "signals": [
     {
       "name": "current_step",
       "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 749, "step": 1}
+      "bind": {"input": "range", "min": -1, "max": 1449, "step": 1}
     },
     {"name": "showgrid", "value": false, "bind": {"input": "checkbox"}},
     {"name": "showrealdata", "value": false, "bind": {"input": "checkbox"}},
@@ -18,10 +18,10 @@
     {
       "name": "labels",
       "values": [
-        {"id": 0, "name": "None"},
-        {"id": 1, "name": "Iris-setosa"},
-        {"id": 2, "name": "Iris-versicolor"},
-        {"id": 3, "name": "Iris-virginica"}
+        {"id": -1, "name": "None"},
+        {"id": 0, "name": "Iris-setosa"},
+        {"id": 1, "name": "Iris-versicolor"},
+        {"id": 2, "name": "Iris-virginica"}
       ]
     },
     {
@@ -46,25 +46,31 @@
       "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/iris.data?token=ASL2ZNJMDB3DV54GHZGUJ63AJIKOM"
     },
     {
-      "name": "predictions",
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/predictions.data?token=ASL2ZNMX2DNC26JDOYJTMRDAJIPZW",
-      "format": {
-        "type": "dsv",
-        "delimiter": ";",
-        "header": ["neuron", "class"],
-        "parse": {"neuron": "number", "class": "number"}
-      }
-    },
-    {
       "name": "neurons",
       "format": {
         "type": "dsv",
         "delimiter": ";",
-        "parse": {"neuron": "number", "step": "number", "score": "number"},
-        "header": ["vector", "neuron", "step", "score"]
+        "parse": {
+          "x-grid": "number",
+          "y-grid": "number",
+          "z-grid": "number",
+          "step": "number",
+          "score": "number",
+          "class": "number"
+        },
+        "header": [
+          "vector",
+          "x-grid",
+          "y-grid",
+          "z-grid",
+          "step",
+          "score",
+          "class"
+        ]
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som.data?token=ASL2ZNJEDM7E7CPBR57EAMLAJIM2K",
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNP4A4Z26IT4X6GTWY3AJVE2E",
       "transform": [
+        {"type": "extent", "signal": "steps", "field": "step"},
         {"type": "filter", "expr": "datum.step === current_step"},
         {
           "type": "formula",
@@ -86,14 +92,32 @@
           "expr": "datum.vector[2]+datum.vector[3]",
           "as": "x"
         },
-        {"type": "formula", "expr": "floor(datum.neuron/10)", "as": "y-grid"},
-        {"type": "formula", "expr": "datum.neuron%10", "as": "x-grid"},
         {
-          "type": "lookup",
-          "from": "predictions",
-          "key": "neuron",
-          "values": ["class"],
-          "fields": ["neuron"]
+          "type": "formula",
+          "expr": "{x:datum['x-grid'], y:datum['y-grid'],z:datum['z-grid']}",
+          "as": "neuron"
+        },
+        {
+          "type": "formula",
+          "expr": "datum.neuron.x+'.'+datum.neuron.y+'.'+datum.neuron.z",
+          "as": "id"
+        }
+      ]
+    },
+    {
+      "name": "dimensions",
+      "source": "neurons",
+      "transform": [
+        {
+          "type": "aggregate",
+          "fields": ["x-grid", "y-grid", "z-grid"],
+          "ops": ["max", "max", "max"],
+          "as": ["dx", "dy", "dz"]
+        },
+        {
+          "type": "formula",
+          "expr": "[datum.dx+1, datum.dy+1, datum.dz+1]",
+          "as": "d"
         }
       ]
     },
@@ -103,38 +127,31 @@
       "transform": [
         {
           "type": "project",
-          "fields": ["neuron", "x-grid", "y-grid"],
-          "as": ["source", "x", "y"]
+          "fields": ["neuron", "id"],
+          "as": ["source", "s_id"]
         },
+        {"type": "formula", "expr": "data('dimensions')[0].d", "as": "dim"},
         {
           "type": "formula",
-          "expr": "[(min(5,datum.y+1))*10+datum.x%10, datum.y*10+(min(9,datum.x+1))%10]",
+          "expr": "[min(datum.dim[0]-1,datum.source.x+1)+'.'+datum.source.y +'.'+datum.source.z,datum.source.x+'.'+min(datum.dim[1]-1,datum.source.y+1)+'.'+datum.source.z,datum.source.x+'.'+datum.source.y+'.'+min(datum.dim[2]-1,datum.source.z+1)]",
           "as": "target"
         },
         {"type": "flatten", "fields": ["target"]},
         {
           "type": "lookup",
           "from": "neurons",
-          "key": "neuron",
-          "fields": ["source"],
-          "values": ["x", "y"],
-          "as": ["s_x", "s_y"]
+          "key": "id",
+          "fields": ["s_id"],
+          "values": ["x", "y", "z"],
+          "as": ["s_x", "s_y", "s_z"]
         },
         {
           "type": "lookup",
           "from": "neurons",
-          "key": "neuron",
+          "key": "id",
           "fields": ["target"],
-          "values": ["x", "y"],
-          "as": ["t_x", "t_y"]
-        },
-        {
-          "type": "lookup",
-          "from": "neurons",
-          "key": "neuron",
-          "fields": ["target"],
-          "values": ["x-grid", "y-grid"],
-          "as": ["t_x-grid", "t_y-grid"]
+          "values": ["x", "y", "z"],
+          "as": ["t_x", "t_y", "t_z"]
         }
       ]
     }
@@ -175,7 +192,7 @@
       "name": "yscale",
       "type": "linear",
       "domain": {"data": "neurons", "field": "y"},
-      "range": [{"signal": "height*0.95"}, {"signal": "height*0.05"}],
+      "range": [{"signal": "height*0.05"}, {"signal": "height*0.95"}],
       "zero": false
     },
     {
@@ -189,13 +206,12 @@
       "type": "linear",
       "domain": {"data": "neurons", "field": "y-grid"},
       "range": [{"signal": "height*0.05"}, {"signal": "height*0.95"}],
-      "reverse": false,
       "zero": false
     },
     {
       "name": "color",
       "type": "ordinal",
-      "domain": {"data": "predictions", "field": "class", "sort": true},
+      "domain": {"data": "labels", "field": "id", "sort": true},
       "range": ["#555", "red", "yellow", "blue"]
     },
     {
