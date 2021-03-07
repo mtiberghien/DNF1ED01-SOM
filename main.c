@@ -10,9 +10,9 @@ int main()
     somConfig *config = getsomDefaultConfig();
     dataVector *data = getIrisData(config);
     config->normalize = 0;
-    config->stabilizationTrigger = 0.32;
-    config->alpha = 0.7;
-    config->sigma = 0.9;
+    config->stabilizationTrigger = 0.4;
+    config->alpha = 0.99;
+    config->sigma = 0.90;
     for(int i=oneD;i<=threeD;i++)
     {
         config->dimension=i;
