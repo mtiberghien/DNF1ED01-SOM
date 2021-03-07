@@ -66,6 +66,7 @@
           "z-grid": "number",
           "step": "number",
           "score": "number",
+          "secondary": "number",
           "class": "number"
         },
         "header": [
@@ -76,6 +77,7 @@
           "step",
           "score",
           "class",
+          "secondary",
           "entries"
         ]
       },
@@ -363,8 +365,9 @@
       "name": "neuron",
       "from": {"data": "neurons"},
       "encode": {
-        "enter": {"stroke": {"value": "#555"}},
+        "enter": {"stroke": {"field": "secondary", "scale": "color"}},
         "update": {
+          "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
           "opacity": {"signal": "showneurons ? 1 : 0"},
           "size": [
             {"test": "showgrid", "field": "score", "scale": "score", "mult": 4},
