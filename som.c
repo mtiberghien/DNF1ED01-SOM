@@ -136,6 +136,7 @@ short updateNeuron(dataVector* v, somNeuron* n, double h, somConfig* config)
         double d = absd(delta);
         stabilized = (d < config->stabilizationTrigger) & stabilized;
     }
+    denormalizeVector(n->v, config->p, n->norm);
     n->norm = normalizeVector(n->v, config->p);
     return stabilized;
 }
