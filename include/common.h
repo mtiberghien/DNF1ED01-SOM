@@ -59,6 +59,7 @@ typedef struct somConfig{
     // The neurons should stabilize automatically (speed related to data volume and changeTrigger). This parameter force the end of learning after n episodes.
     // value <0 means no limit -> 1000 by default
     int maxEpisodes;
+    short normalize;
 } somConfig;
 
 // Define a value area

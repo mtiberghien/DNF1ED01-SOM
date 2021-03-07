@@ -136,8 +136,6 @@ short updateNeuron(dataVector* v, somNeuron* n, double h, somConfig* config)
         double d = absd(delta);
         stabilized = (d < config->stabilizationTrigger) & stabilized;
     }
-    denormalizeVector(n->v, config->p, n->norm);
-    n->norm = normalizeVector(n->v, config->p);
     return stabilized;
 }
 
@@ -294,7 +292,6 @@ void initNeuron(somNeuron*n, somConfig config, dataBoundary *boundaries, int b, 
     {
         n->v[j]= getRandom(boundaries[j]);
     }
-    n->norm = normalizeVector(n->v, config.p);
 }
 
 //Initialize SOM 1D weights with random values based on parameters boundaries
@@ -339,11 +336,13 @@ void initializeBoundaries(dataBoundary *boundaries, dataVector *data, somConfig 
         boundaries[i]= b;
     }
     for(int i = 0; i<config.n; i++){
+        if(config.normalize){
+            data[i].norm = normalizeVector(data[i].v, config.p);
+        }
         for(int j =0; j<config.p; j++){
             boundaries[j].min = min(data[i].v[j], boundaries[j].min);
             boundaries[j].max = max(data[i].v[j], boundaries[j].max);
         }
-        data[i].norm = normalizeVector(data[i].v, config.p);
     }
 }
 
@@ -424,7 +423,8 @@ void* getsom3D(dataVector* data, somConfig *config, dataBoundary* boundaries)
 
 somConfig* getsomDefaultConfig(){
     somConfig* config = malloc(sizeof(somConfig));
-    config->stabilizationTrigger = 0.03;
+    config->normalize = 1;
+    config->stabilizationTrigger = 0.01;
     config->dimension = twoD;
     config->alpha = 0.99;
     config->sigma = 0.99;
@@ -1037,7 +1037,7 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p, ma
         class = score->maxClass;
     }
     for(int i=0;i<p;i++){
-        fprintf(fp, "%f", n->v[i]*n->norm);
+        fprintf(fp, "%f", n->v[i]);
         if(i<p-1)
         {
             fputs(",", fp);
