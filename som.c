@@ -280,16 +280,25 @@ double getRandom(dataBoundary boundary){
     return (((double)rand()/RAND_MAX)*(boundary.max - boundary.min)) + boundary.min;
 }
 
+void initNeuron(somNeuron*n, somConfig config, dataBoundary *boundaries, int b, int r, int c)
+{
+    n->b=b;
+    n->r=r;
+    n->c=c;
+    n->v=(double*)malloc(config.p * sizeof(double));
+    n->neighbours = NULL;
+    n->nc = 0;
+    for(int j=0;j<config.p;j++)
+    {
+        n->v[j]= getRandom(boundaries[j]);
+    }
+    n->norm = normalizeVector(n->v, config.p);
+}
+
 //Initialize SOM 1D weights with random values based on parameters boundaries
 void initialize1D(somNeuron *weights, somConfig config, dataBoundary *boundaries){
     for(int i=0;i<config.nw; i++){
-        weights[i].v = (double*)malloc(config.p * sizeof(double));
-        weights[i].c = i;
-        weights[i].neighbours = NULL;
-        weights[i].nc= 0;
-        for(int j=0;j<config.p;j++){
-            weights[i].v[j]= getRandom(boundaries[j]);
-        }
+        initNeuron(&weights[i], config, boundaries,-1,-1,i);
     }
 }
 
@@ -300,15 +309,7 @@ void initialize2D(somNeuron** weights, somConfig config, dataBoundary *boundarie
         weights[i] = (somNeuron*)malloc(config.map_c * sizeof(somNeuron));
         for(int j=0;j<config.map_c;j++)
         {
-            weights[i][j].v = (double*)malloc(config.p * sizeof(double));
-            weights[i][j].r = i;
-            weights[i][j].c = j;
-            weights[i][j].neighbours = NULL;
-            weights[i][j].nc= 0;
-            for(int k=0;k<config.p;k++)
-            {
-                weights[i][j].v[k]= getRandom(boundaries[k]);
-            }
+            initNeuron(&weights[i][j], config, boundaries,-1,i,j);
         }
     }
 }
@@ -322,16 +323,7 @@ void initialize3D(somNeuron*** weights, somConfig config, dataBoundary *boundari
         {
             weights[i][j] = (somNeuron*)malloc(config.map_c * sizeof(somNeuron));
             for(int k=0;k<config.map_c;k++){
-                weights[i][j][k].v = (double*)malloc(config.p * sizeof(double));
-                weights[i][j][k].b = i;
-                weights[i][j][k].r = j;
-                weights[i][j][k].c = k;
-                weights[i][j][k].neighbours = NULL;
-                weights[i][j][k].nc = 0;
-                for(int l=0;l<config.p;l++)
-                {
-                    weights[i][j][k].v[l]= getRandom(boundaries[l]);
-                }
+               initNeuron(&weights[i][j][k], config, boundaries,i,j,k);
             }
         }
     }
@@ -349,6 +341,7 @@ void initializeBoundaries(dataBoundary *boundaries, dataVector *data, somConfig 
             boundaries[j].min = min(data[i].v[j], boundaries[j].min);
             boundaries[j].max = max(data[i].v[j], boundaries[j].max);
         }
+        data[i].norm = normalizeVector(data[i].v, config.p);
     }
 }
 
@@ -429,7 +422,7 @@ void* getsom3D(dataVector* data, somConfig *config, dataBoundary* boundaries)
 
 somConfig* getsomDefaultConfig(){
     somConfig* config = malloc(sizeof(somConfig));
-    config->stabilizationTrigger = 0.05;
+    config->stabilizationTrigger = 0.02;
     config->dimension = twoD;
     config->alpha = 0.99;
     config->sigma = 0.99;
@@ -1060,9 +1053,9 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p, ma
         s = score->totalEntries;
         class = score->maxClass;
     }
-    for(int j=0;j<p;j++){
-        fprintf(fp, "%f", n->v[j]);
-        if(j<p-1)
+    for(int i=0;i<p;i++){
+        fprintf(fp, "%f", n->v[i]*n->norm);
+        if(i<p-1)
         {
             fputs(",", fp);
         }

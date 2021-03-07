@@ -4,10 +4,8 @@
 #include "include/irisdata.h"
 #include "include/som.h"
 
-
 int main()
 {
-    
     somNeuron** weights;
     somConfig *config = getsomDefaultConfig();
     dataVector *data = getIrisData(config);

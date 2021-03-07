@@ -10,6 +10,7 @@ typedef struct somNeuron{
     int b;
     int r;
     int c;
+    double norm;
 } somNeuron;
 
 typedef struct somScore
