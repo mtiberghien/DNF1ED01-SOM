@@ -501,6 +501,7 @@ void clear_score1D(void* score, somConfig* config)
     for(int i = 0; i < config->map_c; i++)
     {
         free(sc[i].scores);
+        free(sc[i].entries);
     }
     free(sc);
 }
@@ -754,6 +755,7 @@ short hasMultipleResult(int* values, int n)
 void initScore(somScore* s, int nClasses)
 {
     s->scores = malloc(sizeof(int)*nClasses);
+    s->entries = malloc(sizeof(int));
     s->totalEntries = 0;
     for(int i=0;i<nClasses;i++)
     {
@@ -761,10 +763,12 @@ void initScore(somScore* s, int nClasses)
     }
 }
 
-void updateScore(somScore* s, int class)
+void updateScore(somScore* s, int class, int entry)
 {
     s->scores[class]++;
+    s->entries[s->totalEntries]=entry;
     s->totalEntries++;
+    s->entries = realloc(s->entries, (s->totalEntries+1)*sizeof(int));
 }
 
 void updateScoreStats(somScore* s, int nClasses, somScoreResult* scoreResult)
@@ -797,7 +801,7 @@ void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     {
         dataVector v = data[i];
         somNeuron* winner = find_winner1D(&v, weights, config->nw, config->p);
-        updateScore(&score[winner->c], v.class);
+        updateScore(&score[winner->c], v.class, i);
 
     }
     for(int i=0;i<config->map_c;i++)
@@ -825,7 +829,7 @@ void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     {
         dataVector v = data[i];
         somNeuron* winner = find_winner2D(&v, weights, config);
-        updateScore(&score[winner->r][winner->c], v.class);
+        updateScore(&score[winner->r][winner->c], v.class, i);
     }
     for(int i=0;i<config->map_r;i++)
     {
@@ -860,7 +864,7 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     {
         dataVector v = data[i];
         somNeuron* winner = find_winner3D(&v, weights, config);
-        updateScore(&score[winner->b][winner->r][winner->c],v.class);
+        updateScore(&score[winner->b][winner->r][winner->c],v.class, i);
     }
     for(int i=0;i<config->map_b;i++)
     {
@@ -1043,7 +1047,18 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p, ma
             fputs(",", fp);
         }
     }
-    fprintf(fp, "];%d;%d;%d;%ld;%d;%d\n", x,y,z , stepId, s, class );
+    fprintf(fp, "];%d;%d;%d;%ld;%d;%d", x,y,z , stepId, s, class );
+    fputs(";[", fp);
+    int limit = s-1;
+    for(int i=0;i<s;i++)
+    {
+       fprintf(fp, "%d", score->entries[i]);
+        if(i<limit)
+        {
+            fputs(",", fp);
+        } 
+    }
+    fputs("]\n", fp);
 }
 
 void writeNeurons1D(FILE* fp, void* weights, void* scores, long stepId, somConfig* config)

@@ -20,6 +20,7 @@ typedef struct somScore
     //-1 means no class related, 0 one class related, 1 many class related
     short status;
     int* scores;
+    int* entries;
 }somScore;
 
 typedef struct somScoreResult

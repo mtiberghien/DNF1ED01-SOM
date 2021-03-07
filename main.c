@@ -12,8 +12,8 @@ int main()
     config->normalize = 0;
     config->stabilizationTrigger = 0.4;
     config->alpha = 0.99;
-    config->sigma = 0.90;
-    for(int i=oneD;i<=threeD;i++)
+    config->sigma = 0.95;
+    for(int i=twoD;i<=threeD;i++)
     {
         config->dimension=i;
         weights = (somNeuron**)getsom(data, config);
