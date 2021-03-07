@@ -9,7 +9,7 @@ int main()
     somNeuron** weights;
     somConfig *config = getsomDefaultConfig();
     dataVector *data = getIrisData(config);
-    for(int i=oneD;i<=threeD;i++)
+    for(int i=twoD;i<threeD;i++)
     {
         config->dimension=i;
         weights = (somNeuron**)getsom(data, config);
