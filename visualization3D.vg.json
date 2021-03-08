@@ -348,7 +348,7 @@
           "align": {"value": "center"},
           "fill": {"value": "#eee"}
         },
-        "update": {"text": {"signal": "'Neuron map: ' + current_step"}}
+        "update": {"text": {"signal": "'SOM 3D map: ' + current_step"}}
       }
     },
     {
@@ -371,6 +371,9 @@
       "encode": {
         "enter": {"stroke": {"field": "secondary", "scale": "color"}},
         "update": {
+          "tooltip": {
+            "signal": "{'coords':'['+datum.x+','+datum.y+','+datum.z+']'}"
+          },
           "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
           "size": [{"field": "score", "scale": "score", "mult": 1.5}],
           "fill": [{"field": "class", "scale": "color"}],

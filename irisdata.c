@@ -16,14 +16,14 @@ int getIrisClass(char* word){
     }
     return -1;
 }
-
+//Return the name of the class from iris.data file
 char* getIrisLabel(int class){
         switch(class){
-            case 0: return "    Iris-setosa:";
-            case 1: return "Iris-versicolor:";
-            case 2: return " Iris-virginica:";
+            case 0: return "Iris-setosa";
+            case 1: return "Iris-versicolor";
+            case 2: return "Iris-virginica";
         }
-        return "          Other:";
+        return "Other";
 }
 
 //Read iris.data file ans set values in a double array with 5 columns: Sepal.Length, Sepal.Width, Petal.Length, Petal.Width, Class

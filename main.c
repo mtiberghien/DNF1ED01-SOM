@@ -16,6 +16,7 @@ int main()
 
         somScoreResult* result = getscore(data, weights, config);
         int activatedNodes = 0;
+        displayConfig(config);
         displayScore(result, config);
         
         resetConfig(config);

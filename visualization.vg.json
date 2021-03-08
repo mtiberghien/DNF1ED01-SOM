@@ -15,11 +15,22 @@
         }
       ]
     },
-    {"name": "showgrid", "value": false, "bind": {"input": "checkbox"}},
+    {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
+    {"name": "showmap", "value": false, "bind": {"input": "checkbox"}},
     {"name": "showrealdata", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showneurons", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showlinks", "value": false, "bind": {"input": "checkbox"}},
-    {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
+    {
+      "name": "scale",
+      "value": 0.8,
+      "bind": {"input": "range", "step": 0.05, "min": 0, "max": 1},
+      "on": [
+        {
+          "events": "view:mousewheel",
+          "update": "max(0, min(1, scale + (event.wheelDelta > 0 ? 0.1 : -0.1)))"
+        }
+      ]
+    },
     {
       "name": "selectedNeuron",
       "init": "{}",
@@ -215,13 +226,19 @@
       "type": "linear",
       "domain": {"data": "iris", "field": "x"},
       "zero": false,
-      "range": [{"signal": "width*0.05"}, {"signal": "width*0.95"}]
+      "range": [
+        {"signal": "width*(1-scale)/2"},
+        {"signal": "width*(scale+1)/2"}
+      ]
     },
     {
       "name": "yscale-iris",
       "type": "linear",
       "domain": {"data": "iris", "field": "y"},
-      "range": [{"signal": "height*0.05"}, {"signal": "height*0.95"}],
+      "range": [
+        {"signal": "height*(1-scale)/2"},
+        {"signal": "height*(1+scale)/2"}
+      ],
       "zero": false
     },
     {
@@ -229,26 +246,38 @@
       "type": "linear",
       "domain": {"data": "neurons", "field": "x"},
       "zero": false,
-      "range": [{"signal": "width*0.05"}, {"signal": "width*0.95"}]
+      "range": [
+        {"signal": "width*(1-scale)/2"},
+        {"signal": "width*(scale+1)/2"}
+      ]
     },
     {
       "name": "yscale",
       "type": "linear",
       "domain": {"data": "neurons", "field": "y"},
-      "range": [{"signal": "height*0.05"}, {"signal": "height*0.95"}],
+      "range": [
+        {"signal": "height*(1-scale)/2"},
+        {"signal": "height*(1+scale)/2"}
+      ],
       "zero": false
     },
     {
       "name": "xscale-grid",
       "type": "linear",
       "domain": {"data": "neurons", "field": "x-grid"},
-      "range": [{"signal": "width*0.05"}, {"signal": "width*0.95"}]
+      "range": [
+        {"signal": "width*(1-scale)/2"},
+        {"signal": "width*(scale+1)/2"}
+      ]
     },
     {
       "name": "yscale-grid",
       "type": "linear",
       "domain": {"data": "neurons", "field": "y-grid"},
-      "range": [{"signal": "height*0.05"}, {"signal": "height*0.95"}],
+      "range": [
+        {"signal": "height*(1-scale)/2"},
+        {"signal": "height*(1+scale)/2"}
+      ],
       "zero": false
     },
     {
@@ -280,7 +309,7 @@
     {
       "orient": "left",
       "scale": "yscale",
-      "title": {"signal": "showgrid ? 'Rows':'Sepal.Width + Sepal.Length'"},
+      "title": {"signal": "showmap ? 'Rows':'Sepal.Width + Sepal.Length'"},
       "titleColor": "#fff",
       "domain": false,
       "labels": false,
@@ -290,7 +319,7 @@
       "orient": "bottom",
       "scale": "xscale",
       "titleColor": "#fff",
-      "title": {"signal": "showgrid ? 'Columns':'Petal.Width + Petal.Length'"},
+      "title": {"signal": "showmap ? 'Columns':'Petal.Width + Petal.Length'"},
       "domain": false,
       "labels": false,
       "ticks": false
@@ -309,7 +338,7 @@
         },
         "update": {
           "text": {
-            "signal": "(showgrid ? 'Neuron map: ':'K-Means step: ') + current_step"
+            "signal": "(showmap ? 'Neuron map: ':'K-Means step: ') + current_step"
           }
         }
       }
@@ -320,7 +349,7 @@
       "encode": {
         "enter": {"stroke": {"value": "#555"}, "size": {"value": 30}},
         "update": {
-          "opacity": {"signal": "showrealdata && !showgrid ? 0.5 : 0"},
+          "opacity": {"signal": "showrealdata && !showmap ? 0.5 : 0"},
           "fill": {"field": "class", "scale": "color"},
           "xc": {"field": "x", "scale": "xscale-iris"},
           "yc": {"field": "y", "scale": "yscale-iris"}
@@ -333,7 +362,7 @@
       "encode": {
         "enter": {"stroke": {"value": "#555"}, "size": {"value": 30}},
         "update": {
-          "opacity": {"signal": "showrealdata && !showgrid ? 0.5 : 0"},
+          "opacity": {"signal": "showrealdata && !showmap ? 0.5 : 0"},
           "fill": {"value": "white"},
           "xc": {"field": "x", "scale": "xscale-iris"},
           "yc": {"field": "y", "scale": "yscale-iris"}
@@ -349,19 +378,19 @@
           "strokeWidth": {"value": 0.5},
           "opacity": {"signal": "showlinks && showneurons ? 1 :0"},
           "x": [
-            {"test": "showgrid", "field": "source.x", "scale": "xscale-grid"},
+            {"test": "showmap", "field": "source.x", "scale": "xscale-grid"},
             {"field": "s_x", "scale": "xscale"}
           ],
           "y": [
-            {"test": "showgrid", "field": "source.y", "scale": "yscale-grid"},
+            {"test": "showmap", "field": "source.y", "scale": "yscale-grid"},
             {"field": "s_y", "scale": "yscale"}
           ],
           "x2": [
-            {"test": "showgrid", "field": "target.x", "scale": "xscale-grid"},
+            {"test": "showmap", "field": "target.x", "scale": "xscale-grid"},
             {"field": "t_x", "scale": "xscale"}
           ],
           "y2": [
-            {"test": "showgrid", "field": "target.y", "scale": "yscale-grid"},
+            {"test": "showmap", "field": "target.y", "scale": "yscale-grid"},
             {"field": "t_y", "scale": "yscale"}
           ]
         }
@@ -377,7 +406,7 @@
           "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
           "opacity": {"signal": "showneurons ? 1 : 0"},
           "size": [
-            {"test": "showgrid", "field": "score", "scale": "score", "mult": 4},
+            {"test": "showmap", "field": "score", "scale": "score", "mult": 4},
             {"field": "score", "scale": "score"}
           ],
           "fill": [
@@ -385,11 +414,11 @@
             {"field": "class", "scale": "color"}
           ],
           "xc": [
-            {"test": "showgrid", "field": "x-grid", "scale": "xscale-grid"},
+            {"test": "showmap", "field": "x-grid", "scale": "xscale-grid"},
             {"field": "x", "scale": "xscale"}
           ],
           "yc": [
-            {"test": "showgrid", "field": "y-grid", "scale": "yscale-grid"},
+            {"test": "showmap", "field": "y-grid", "scale": "yscale-grid"},
             {"field": "y", "scale": "yscale"}
           ]
         }
@@ -410,7 +439,7 @@
             "field": "xc",
             "offset": {
               "signal": "-sqrt(scale('score', datum.datum.score)/2)",
-              "mult": {"signal": "showgrid ? 2:1"}
+              "mult": {"signal": "showmap ? 2:1"}
             }
           },
           "yc": {"field": "yc"},
