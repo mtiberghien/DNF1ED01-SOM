@@ -74,6 +74,8 @@ typedef struct dataBoundary{
 double min(double x, double y);
 //get the min value for 2 doubles
 double max(double x, double y);
+//Get the norm (square root of sum of square of p elements)
+double getNorm(double*v, int p);
 //Normalize the vector using p parameters -> return the norm
 double normalizeVector(double* v, int p);
 //Denormalize the vector using p parameters and the norm

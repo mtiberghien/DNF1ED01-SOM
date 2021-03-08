@@ -14,7 +14,7 @@ typedef struct somNeuron{
     //column index (used in all dimensions)
     int c;
     short isStabilized;
-    short isModified;
+    double* updates;
 } somNeuron;
 
 //scoring statistics for one neuron

@@ -8,7 +8,7 @@
 //som1D.data will store history for 1D map
 //som2D.data will store history for 2D map
 //som3D.data will store history for 3D map
-#define TRACE_SOM 1
+#define TRACE_SOM 15
 
 #pragma region Config Section
 somConfig* getsomDefaultConfig(){
@@ -16,23 +16,19 @@ somConfig* getsomDefaultConfig(){
     
 #ifdef TRACE_SOM
     config->normalize = 0;
-    config->stabilizationTrigger = 0.38;
-    config->alpha = 0.9;
-    config->sigma = 0.9;
-    config->sigmaDecreaseRate=0.90;
-    config->maxEpisodes = 50;
+    config->stabilizationTrigger = 0.01;
 #else
     config->normalize = 1;
     config->stabilizationTrigger = 0.01;
+#endif
+    config->dimension = twoD;
     config->alpha = 0.99;
     config->sigma = 0.99;
     config->sigmaDecreaseRate=0.95;
-config->maxEpisodes = 1000;
-#endif
-    config->dimension = twoD;
     config->alphaDecreaseRate=0.99;
     config->radiusDecreaseRate = 3;
     config->initialPercentCoverage = 0.6;
+    config->maxEpisodes = 1000;
 }
 
 
@@ -60,7 +56,7 @@ void initNeuron(somNeuron*n, somConfig config, dataBoundary *boundaries, int b, 
     n->v=(double*)malloc(config.p * sizeof(double));
     n->neighbours = NULL;
     n->nc = 0;
-    n->isModified = 0;
+    n->updates = (double*)calloc(config.p , sizeof(double));
     n->isStabilized = 0;
     for(int j=0;j<config.p;j++)
     {
@@ -186,6 +182,10 @@ void initializeBoundaries(dataBoundary *boundaries, dataVector *data, somConfig 
     for(int i = 0; i<config.n; i++){
         if(config.normalize){
             data[i].norm = normalizeVector(data[i].v, config.p);
+        }
+        else
+        {
+            data[i].norm = getNorm(data[i].v, config.p);
         }
         for(int j =0; j<config.p; j++){
             boundaries[j].min = min(data[i].v[j], boundaries[j].min);
@@ -326,13 +326,13 @@ double absd(double v)
 
 short updateNeuron(dataVector* v, somNeuron* n, double h, somConfig* config)
 {
-    short modified = n->isModified;
+    short modified = 0;
     for(int i=0;i<config->p;i++){
         double delta = config->alpha * h *(v->v[i] - n->v[i]);
+        n->updates[i]+= delta;
         n->v[i] += delta;
         modified = modified || (absd(delta) > config->stabilizationTrigger);
     }
-    n->isModified |=modified;
     return !modified;
 }
 
@@ -574,6 +574,7 @@ void clear_mem1D(void* weights, void* score, somConfig* config)
     {
         free(som[i].v);
         free(som[i].neighbours);
+        free(som[i].updates);
         if(sc)
         {
             free(sc[i].scores);
@@ -638,41 +639,54 @@ void clear_mem(void* weights, somScoreResult* score, somConfig* config)
     }
     
 }
+
 #pragma endregion
-void updateStabilized1D(void* weights, somConfig* config)
+short getIsStabilized(double* updates, somConfig* config)
 {
+   for(int i=0;i<config->p;i++)
+   {
+       if(absd(updates[i]) > config->stabilizationTrigger)
+       {
+           return 0;
+       }
+   }
+   return 1;
+}
+
+short updateStabilized1D(void* weights, somConfig* config)
+{
+    short stabilized = 1;
     somNeuron* som = (somNeuron*)weights;
     for(int i=0;i<config->map_c;i++)
     {
         somNeuron* n = &som[i];
-        if(n->isModified)
-        {
-            n->isModified = 0;
-            n->isStabilized = 0;
-        }
-        else
-        {
-            n->isStabilized = 1;
-        }
+        n->isStabilized = getIsStabilized(n->updates, config);
+        stabilized = n->isStabilized & stabilized;
+        n->updates = (double*)calloc(config->p, sizeof(double));
     }
+    return stabilized;
 }
 
-void updateStabilized2D(void* weights, somConfig* config)
+short updateStabilized2D(void* weights, somConfig* config)
 {
+    short stabilized = 1;
     somNeuron** som = (somNeuron**)weights;
     for(int i=0;i<config->map_r;i++)
     {
-        updateStabilized1D(som[i], config);
+       stabilized = updateStabilized1D(som[i], config) & stabilized;
     }
+    return stabilized;
 }
 
-void updateStabilized3D(void* weights, somConfig* config)
+short updateStabilized3D(void* weights, somConfig* config)
 {
+    short stabilized = 1;
     somNeuron*** som = (somNeuron***)weights;
     for(int i=0;i<config->map_b;i++)
     {
-        updateStabilized2D(som[i], config);
+        stabilized = updateStabilized2D(som[i], config) & stabilized;
     }
+    return stabilized;
 }
 
 //Get stabilized som neurons that has been train using provided data and config
@@ -690,7 +704,7 @@ void* getsom(dataVector* data, somConfig *config)
     void* (*initfp)(dataVector*, somConfig*, dataBoundary*);
     short (*learnfp)(int, dataVector*, void*, somConfig*);
     void (*clearnbfp)(void*, somConfig*);
-    void (*updatestfp)(void*, somConfig*);
+    short (*updatestfp)(void*, somConfig*);
 #ifdef TRACE_SOM
     void (*clearscorefp)(void*, somConfig*);
 #endif
@@ -736,6 +750,7 @@ void* getsom(dataVector* data, somConfig *config)
     short hasStabilized;
 #ifdef TRACE_SOM
     long stepId = 0;
+    long time = 0;
     write(weights, config);
 #endif
     while(again)
@@ -745,14 +760,17 @@ void* getsom(dataVector* data, somConfig *config)
         {
             int ivector = ((double)rand()/RAND_MAX)*i;
             int proposed = vectorsToPropose[ivector];
-            hasStabilized = learnfp(proposed, &data[proposed], weights, &cfg) & hasStabilized;
+            learnfp(proposed, &data[proposed], weights, &cfg);
             vectorsToPropose[ivector] = vectorsToPropose[i];
             vectorsToPropose[i] = i;
 #ifdef TRACE_SOM
-                somScoreResult* result = getscore(data, weights, config);
-                writeAppend(stepId++, weights, config, result);
-                clearscorefp(result->scores, config);
-                free(result);
+                if(time++%TRACE_SOM == 0)
+                {
+                    somScoreResult* result = getscore(data, weights, config);
+                    writeAppend(stepId++, weights, config, result);
+                    clearscorefp(result->scores, config);
+                    free(result);
+                }
 #endif      
         }
         cfg.alpha*= cfg.alphaDecreaseRate;
@@ -765,7 +783,7 @@ void* getsom(dataVector* data, somConfig *config)
             }         
         }
         episode++;
-        updatestfp(weights, &cfg);
+        hasStabilized = updatestfp(weights, &cfg);
         again = !hasStabilized && episode <cfg.maxEpisodes;
     }
     if(hasStabilized)

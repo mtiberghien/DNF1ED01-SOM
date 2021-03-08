@@ -11,20 +11,22 @@ double min(double x, double y)
 double max(double x, double y){
     return y > x ? y : x;
 }
-//Calculate the norm (the square root of the sum of square o vector elements) and divide the vector by the norm
-//Returns the norm
-double normalizeVector(double* v, int p){
+
+double getNorm(double*v, int p)
+{
     double norm=0;
     for(int i = 0;i<p;i++){
         norm+=pow(v[i],2);
     }
-
-    norm = sqrt(norm);
-    if(norm!=0)
+    return norm == 0 ? 1: sqrt(norm);
+}
+//Calculate the norm (the square root of the sum of square o vector elements) and divide the vector by the norm
+//Returns the norm
+double normalizeVector(double* v, int p){
+  double norm = getNorm(v, p);  
+    for(int i= 0;i<p;i++)
     {
-        for(int i= 0;i<p;i++){
             v[i]/=norm;
-        }
     }
     return norm;
 }
