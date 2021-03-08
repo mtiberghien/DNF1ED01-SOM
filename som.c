@@ -8,7 +8,7 @@
 //som1D.data will store history for 1D map
 //som2D.data will store history for 2D map
 //som3D.data will store history for 3D map
-//#define TRACE_SOM 1
+#define TRACE_SOM 1
 
 #pragma region Config Section
 somConfig* getsomDefaultConfig(){
@@ -60,6 +60,8 @@ void initNeuron(somNeuron*n, somConfig config, dataBoundary *boundaries, int b, 
     n->v=(double*)malloc(config.p * sizeof(double));
     n->neighbours = NULL;
     n->nc = 0;
+    n->isModified = 0;
+    n->isStabilized = 0;
     for(int j=0;j<config.p;j++)
     {
         n->v[j]= getRandom(boundaries[j]);
@@ -324,12 +326,13 @@ double absd(double v)
 
 short updateNeuron(dataVector* v, somNeuron* n, double h, somConfig* config)
 {
-    short modified = 0;
+    short modified = n->isModified;
     for(int i=0;i<config->p;i++){
         double delta = config->alpha * h *(v->v[i] - n->v[i]);
         n->v[i] += delta;
         modified = modified || (absd(delta) > config->stabilizationTrigger);
     }
+    n->isModified |=modified;
     return !modified;
 }
 
@@ -636,6 +639,41 @@ void clear_mem(void* weights, somScoreResult* score, somConfig* config)
     
 }
 #pragma endregion
+void updateStabilized1D(void* weights, somConfig* config)
+{
+    somNeuron* som = (somNeuron*)weights;
+    for(int i=0;i<config->map_c;i++)
+    {
+        somNeuron* n = &som[i];
+        if(n->isModified)
+        {
+            n->isModified = 0;
+            n->isStabilized = 0;
+        }
+        else
+        {
+            n->isStabilized = 1;
+        }
+    }
+}
+
+void updateStabilized2D(void* weights, somConfig* config)
+{
+    somNeuron** som = (somNeuron**)weights;
+    for(int i=0;i<config->map_r;i++)
+    {
+        updateStabilized1D(som[i], config);
+    }
+}
+
+void updateStabilized3D(void* weights, somConfig* config)
+{
+    somNeuron*** som = (somNeuron***)weights;
+    for(int i=0;i<config->map_b;i++)
+    {
+        updateStabilized2D(som[i], config);
+    }
+}
 
 //Get stabilized som neurons that has been train using provided data and config
 void* getsom(dataVector* data, somConfig *config)
@@ -652,6 +690,7 @@ void* getsom(dataVector* data, somConfig *config)
     void* (*initfp)(dataVector*, somConfig*, dataBoundary*);
     short (*learnfp)(int, dataVector*, void*, somConfig*);
     void (*clearnbfp)(void*, somConfig*);
+    void (*updatestfp)(void*, somConfig*);
 #ifdef TRACE_SOM
     void (*clearscorefp)(void*, somConfig*);
 #endif
@@ -660,6 +699,7 @@ void* getsom(dataVector* data, somConfig *config)
          initfp = getsom1D;
          learnfp = learn1D;
          clearnbfp = clear_neighbours1D;
+         updatestfp = updateStabilized1D;
 #ifdef TRACE_SOM
          clearscorefp = clear_score1D;
 #endif
@@ -668,6 +708,7 @@ void* getsom(dataVector* data, somConfig *config)
          initfp = getsom3D;
          learnfp = learn3D;
          clearnbfp = clear_neighbours3D;
+         updatestfp = updateStabilized3D;
 #ifdef TRACE_SOM
          clearscorefp = clear_score3D;
 #endif
@@ -677,6 +718,7 @@ void* getsom(dataVector* data, somConfig *config)
          initfp = getsom2D;
          learnfp = learn2D;
          clearnbfp = clear_neighbours2D;
+         updatestfp = updateStabilized2D;
 #ifdef TRACE_SOM
          clearscorefp = clear_score2D;
 #endif
@@ -723,6 +765,7 @@ void* getsom(dataVector* data, somConfig *config)
             }         
         }
         episode++;
+        updatestfp(weights, &cfg);
         again = !hasStabilized && episode <cfg.maxEpisodes;
     }
     if(hasStabilized)
@@ -1074,6 +1117,7 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p)
     int s = -1;
     int class = -1;
     int class2 = -1;
+    short stabilized = n->isStabilized;
     if(score)
     {
         s = score->totalEntries;
@@ -1087,7 +1131,7 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p)
             fputs(",", fp);
         }
     }
-    fprintf(fp, "];%d;%d;%d;%ld;%d;%d;%d", x,y,z , stepId, s, class,  class2);
+    fprintf(fp, "];%d;%d;%d;%ld;%d;%d;%d;%d", x,y,z , stepId, s, class,  class2, stabilized);
     fputs(";[", fp);
     int limit = s-1;
     for(int i=0;i<s;i++)

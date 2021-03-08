@@ -16,7 +16,7 @@
     {
       "name": "current_step",
       "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 2549, "step": 1},
+      "bind": {"input": "range", "min": -1, "max": 1799, "step": 1},
       "on": [
         {
           "events": "timer[50]",
@@ -326,7 +326,7 @@
       "name": "score",
       "type": "linear",
       "domain": {"signal": "scores"},
-      "range": [50, 300]
+      "range": [50, 500]
     },
     {
       "name": "label",
@@ -375,7 +375,9 @@
             "signal": "{'coords':'['+datum.x+','+datum.y+','+datum.z+']'}"
           },
           "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
-          "size": [{"field": "score", "scale": "score", "mult": 1.5}],
+          "size": [
+            {"field": "score", "scale": "score", "mult": {"signal": "4*scale"}}
+          ],
           "fill": [{"field": "class", "scale": "color"}],
           "xc": [{"field": "px", "scale": "xscale"}],
           "yc": [{"field": "py", "scale": "yscale"}]
@@ -395,7 +397,9 @@
         "update": {
           "xc": {
             "field": "xc",
-            "offset": {"signal": "-sqrt(scale('score', datum.datum.score))"}
+            "offset": {
+              "signal": "-sqrt(scale('score', datum.datum.score)) - 5*scale"
+            }
           },
           "yc": {"field": "yc"},
           "opacity": {"signal": "datum.datum.id === selectedNeuron.id ? 1 :0"}

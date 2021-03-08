@@ -13,6 +13,8 @@ typedef struct somNeuron{
     int r;
     //column index (used in all dimensions)
     int c;
+    short isStabilized;
+    short isModified;
 } somNeuron;
 
 //scoring statistics for one neuron
