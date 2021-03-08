@@ -8,7 +8,7 @@
 //som1D.data will store history for 1D map
 //som2D.data will store history for 2D map
 //som3D.data will store history for 3D map
-#define TRACE_SOM 15
+//#define TRACE_SOM 15
 
 #pragma region Config Section
 somConfig* getsomDefaultConfig(){
@@ -16,7 +16,7 @@ somConfig* getsomDefaultConfig(){
     
 #ifdef TRACE_SOM
     config->normalize = 0;
-    config->stabilizationTrigger = 0.01;
+    config->stabilizationTrigger = 0.05;
 #else
     config->normalize = 1;
     config->stabilizationTrigger = 0.01;
