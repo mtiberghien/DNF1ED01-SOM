@@ -7,7 +7,7 @@
     {
       "name": "current_step",
       "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 2129, "step": 1},
+      "bind": {"input": "range", "min": -1, "max": 2072, "step": 1},
       "on": [
         {
           "events": "timer[10]",
@@ -246,7 +246,7 @@
     {
       "name": "xscale",
       "type": "linear",
-      "domain": {"data": "neurons", "field": "x"},
+      "domain": {"data": "iris", "field": "x"},
       "zero": false,
       "range": [
         {"signal": "width*(1-scale)/2"},
@@ -256,7 +256,7 @@
     {
       "name": "yscale",
       "type": "linear",
-      "domain": {"data": "neurons", "field": "y"},
+      "domain": {"data": "iris", "field": "y"},
       "range": [
         {"signal": "height*(1-scale)/2"},
         {"signal": "height*(1+scale)/2"}
@@ -406,15 +406,18 @@
         "enter": {"stroke": {"field": "secondary", "scale": "color"}},
         "update": {
           "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
-          "opacity": {
-            "signal": "showneurons  ? (datum.stabilized ? 0.5: (!isDefined(selectedNeuron.id) || selectedNeuron.id === datum.id) ? 1 : 0.3) : 0"
-          },
+          "opacity": [
+            {
+              "test": "!showmap",
+              "signal": "showneurons  ? ((!isDefined(selectedNeuron.id) || selectedNeuron.id === datum.id || datum.class !== selectedNeuron.class) ? (datum.stabilized ? 0.5: 1): 0.3) : 0"
+            }
+          ],
           "size": [
             {
               "test": "showmap",
               "field": "score",
               "scale": "score",
-              "mult": {"signal": "40*scale"}
+              "mult": {"signal": "30*scale"}
             },
             {"field": "score", "scale": "score", "mult": {"signal": "2*scale"}}
           ],
@@ -448,7 +451,7 @@
             "field": "xc",
             "offset": {
               "signal": "-sqrt(scale('score', datum.datum.score)/2)",
-              "mult": {"signal": "showmap ? 2:1"}
+              "mult": {"signal": "showmap ? 4:1"}
             }
           },
           "yc": {"field": "yc"},

@@ -4,7 +4,10 @@
   "height": 600,
   "background": "black",
   "signals": [
-    {"name": "center", "init": "1.5"},
+    {
+      "name": "center",
+      "init": "[data('dimensions')[0].dx,data('dimensions')[0].dy,data('dimensions')[0].dz]"
+    },
     {
       "name": "selectedNeuron",
       "init": "{}",
@@ -16,7 +19,7 @@
     {
       "name": "current_step",
       "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 1799, "step": 1},
+      "bind": {"input": "range", "min": -1, "max": 1149, "step": 1},
       "on": [
         {
           "events": "timer[50]",
@@ -205,7 +208,7 @@
       "transform": [
         {
           "type": "formula",
-          "expr": "{x:datum.x -center, y: datum.y- center, z:datum.z -center, w:0}",
+          "expr": "{x:datum.x -center[0]/2, y: datum.y- center[1]/2, z:datum.z-center[2]/2.0 , w:0}",
           "as": "qp"
         },
         {
@@ -279,7 +282,7 @@
       "transform": [
         {
           "type": "formula",
-          "expr": "[{x:datum.s_x - center, y: datum.s_y- center, z:datum.s_z-center, w:0},{x:datum.t_x-center, y: datum.t_y-center, z:datum.t_z-center, w:0}]",
+          "expr": "[{x:datum.s_x - center[0]/2, y: datum.s_y- center[1]/2, z:datum.s_z-center[2]/2, w:0},{x:datum.t_x-center[0]/2, y: datum.t_y-center[1]/2, z:datum.t_z-center[2]/2, w:0}]",
           "as": "qp"
         },
         {

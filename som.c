@@ -26,7 +26,7 @@ somConfig* getsomDefaultConfig(){
     config->alphaDecreaseRate=0.99;
     config->sigma = 0.99;
     config->sigmaDecreaseRate=0.95;
-    config->radiusDecreaseRate = 5;
+    config->radiusDecreaseRate = 4;
     config->initialPercentCoverage = 0.6;
     config->maxEpisodes = 1000;
 }
