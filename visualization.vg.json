@@ -6,8 +6,8 @@
   "signals": [
     {
       "name": "current_step",
-      "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 2072, "step": 1},
+      "value": 10,
+      "bind": {"input": "range", "min": -1, "max": 2258, "step": 1},
       "on": [
         {
           "events": "timer[10]",
@@ -15,8 +15,13 @@
         }
       ]
     },
+    {
+      "name": "neuronscale",
+      "init": "min(2,min(width,height)/400)",
+      "bind": {"input": "range", "min": 0.5, "step": 0.1, "max": 2}
+    },
     {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
-    {"name": "showmap", "value": false, "bind": {"input": "checkbox"}},
+    {"name": "showmap", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showrealdata", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showneurons", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showlinks", "value": false, "bind": {"input": "checkbox"}},
@@ -101,7 +106,7 @@
           "entries"
         ]
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNIS3MAH35OS43VNVFTAJXXVE",
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNN6UW57FAZ36R4JQ2DAKEWPY",
       "transform": [
         {"type": "extent", "signal": "steps", "field": "step"},
         {"type": "extent", "signal": "scores", "field": "score"},
@@ -246,7 +251,7 @@
     {
       "name": "xscale",
       "type": "linear",
-      "domain": {"data": "iris", "field": "x"},
+      "domain": {"data": "neurons", "field": "x"},
       "zero": false,
       "range": [
         {"signal": "width*(1-scale)/2"},
@@ -256,7 +261,7 @@
     {
       "name": "yscale",
       "type": "linear",
-      "domain": {"data": "iris", "field": "y"},
+      "domain": {"data": "neurons", "field": "y"},
       "range": [
         {"signal": "height*(1-scale)/2"},
         {"signal": "height*(1+scale)/2"}
@@ -304,7 +309,7 @@
       "name": "score",
       "type": "linear",
       "domain": {"signal": "scores"},
-      "range": [50, 600]
+      "range": [{"signal": "50*neuronscale"}, {"signal": "300*neuronscale"}]
     }
   ],
   "axes": [
@@ -349,8 +354,9 @@
       "type": "symbol",
       "from": {"data": "iris"},
       "encode": {
-        "enter": {"stroke": {"value": "#555"}, "size": {"value": 30}},
+        "enter": {"stroke": {"value": "#555"}},
         "update": {
+          "size": {"value": 30, "mult": {"signal": "neuronscale"}},
           "opacity": {"signal": "showrealdata && !showmap ? 0.5 : 0"},
           "fill": {"field": "class", "scale": "color"},
           "xc": {"field": "x", "scale": "xscale-iris"},
@@ -362,8 +368,9 @@
       "type": "symbol",
       "from": {"data": "entries"},
       "encode": {
-        "enter": {"stroke": {"value": "#555"}, "size": {"value": 30}},
+        "enter": {"stroke": {"value": "#555"}},
         "update": {
+          "size": {"value": 30, "mult": {"signal": "neuronscale"}},
           "opacity": {"signal": "showrealdata && !showmap ? 0.5 : 0"},
           "fill": {"value": "white"},
           "xc": {"field": "x", "scale": "xscale-iris"},
@@ -417,7 +424,7 @@
               "test": "showmap",
               "field": "score",
               "scale": "score",
-              "mult": {"signal": "30*scale"}
+              "mult": {"signal": "15*scale*neuronscale"}
             },
             {"field": "score", "scale": "score", "mult": {"signal": "2*scale"}}
           ],
@@ -451,7 +458,7 @@
             "field": "xc",
             "offset": {
               "signal": "-sqrt(scale('score', datum.datum.score)/2)",
-              "mult": {"signal": "showmap ? 4:1"}
+              "mult": {"signal": "showmap ? 2.5*neuronscale:1"}
             }
           },
           "yc": {"field": "yc"},
