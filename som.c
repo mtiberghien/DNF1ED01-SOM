@@ -16,17 +16,17 @@ somConfig* getsomDefaultConfig(){
     
 #ifdef TRACE_SOM
     config->normalize = 0;
-    config->stabilizationTrigger = 0.05;
+    config->stabilizationTrigger = 0.1;
 #else
     config->normalize = 1;
     config->stabilizationTrigger = 0.001;
 #endif
     config->dimension = twoD;
-    config->alpha = 0.9;
+    config->alpha = 0.99;
     config->alphaDecreaseRate=0.99;
-    config->sigma = 0.9;
-    config->sigmaDecreaseRate=0.90;
-    config->radiusDecreaseRate = 5;
+    config->sigma = 0.95;
+    config->sigmaDecreaseRate=0.95;
+    config->radiusDecreaseRate = 3;
     config->initialPercentCoverage = 0.6;
     config->maxEpisodes = 1000;
 }
