@@ -1,23 +1,5 @@
 #include "common.h"
 
-//The SOM neuron
-typedef struct somNeuron{
-    //stores the vector
-    double* v;
-    struct somNeuron** neighbours;
-    //neighbours count
-    int nc;
-    //block index (used in 3D map only)
-    int b;
-    //row index (used in 2D and 3D map)
-    int r;
-    //column index (used in all dimensions)
-    int c;
-    short isStabilized;
-    double* updates;
-    int* entries;
-    int ec;
-} somNeuron;
 
 //scoring statistics for one neuron
 typedef struct somScore

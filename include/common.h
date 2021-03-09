@@ -1,6 +1,25 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+//The SOM neuron
+typedef struct somNeuron{
+    //stores the vector
+    double* v;
+    struct somNeuron** neighbours;
+    //neighbours count
+    int nc;
+    //block index (used in 3D map only)
+    int b;
+    //row index (used in 2D and 3D map)
+    int r;
+    //column index (used in all dimensions)
+    int c;
+    short isStabilized;
+    double* updates;
+    int* entries;
+    int ec;
+} somNeuron;
+
 // Defines a data vector
 typedef struct dataVector{
     //stores the vector
@@ -9,6 +28,7 @@ typedef struct dataVector{
     double norm;
     //stores optionnaly the known label for further validation
     int class;
+    somNeuron* lastWinner;
 } dataVector;
 
 typedef struct neuronLocation{
