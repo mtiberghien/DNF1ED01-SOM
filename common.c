@@ -47,3 +47,19 @@ void clear_data(dataVector* data, somConfig* config)
         }
     }
 }
+
+//Get min and max for each parameters of the data set
+void calculateBoundaries(dataVector *data, dataBoundary *boundaries, somConfig* config){
+    int p = config->p;
+    int n = config->n;
+    for(int i=0; i<p; i++){
+        dataBoundary b = {__DBL_MAX__, __DBL_MIN__};
+        boundaries[i]= b;
+    }
+    for(int i = 0; i<n; i++){
+        for(int j =0; j<p; j++){
+            boundaries[j].min = min(data[i].v[j], boundaries[j].min);
+            boundaries[j].max = max(data[i].v[j], boundaries[j].max);
+        }
+    }
+}

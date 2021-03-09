@@ -57,6 +57,10 @@ dataVector* getIrisData(somConfig *config){
                 ptr = strtok(NULL, delim);
                 column++;
             }
+            if(config->normalize)
+            {    
+                data[ln].norm = normalizeVector(data[ln].v, config->p);
+            }
             ln++;
             if(ptr){
                 free(ptr);

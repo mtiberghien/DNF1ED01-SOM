@@ -82,3 +82,4 @@ double normalizeVector(double* v, int p);
 void denormalizeVector(double* v, int p, double norm);
 //Free data memory
 void clear_data(dataVector* data, somConfig* config);
+void calculateBoundaries(dataVector* data, dataBoundary* boundaries, somConfig* config);
