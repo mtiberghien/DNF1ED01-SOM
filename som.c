@@ -773,7 +773,7 @@ void* getsom(dataVector* data, somConfig *config)
     }
    
     dataBoundary boundaries[config->p];
-    printf("Calculating SOM for %d entries and %d parameters :", config->n, config->p);
+    printf("Calculating  %dD SOM for %d entries and %d parameters :", config->dimension, config->n, config->p);
     initializeBoundaries(boundaries, data, *config);
     void* (*initfp)(dataVector*, somConfig*, dataBoundary*);
     void (*learnfp)(int, dataVector*, void*, somConfig*);
@@ -868,16 +868,13 @@ void* getsom(dataVector* data, somConfig *config)
         }
         nStabilized += nNewStabilized;
         episode++;
-        again = cfg.n !=0 && episode <cfg.maxEpisodes;
+        again = nStabilized != config->nw && episode <cfg.maxEpisodes;
     }
 #ifdef TRACE_SOM
-                if(time++%TRACE_SOM == 0)
-                {
-                    somScoreResult* result = getscore(data, weights, config);
-                    writeAppend(stepId++, weights, config, result);
-                    clearscorefp(result->scores, config);
-                    free(result);
-                }
+    somScoreResult* result = getscore(data, weights, config);
+    writeAppend(stepId++, weights, config, result);
+    clearscorefp(result->scores, config);
+    free(result);
 #endif   
     if(cfg.n == 0)
     {

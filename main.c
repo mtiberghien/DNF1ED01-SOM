@@ -6,14 +6,13 @@
 
 int main()
 {
-    somNeuron** weights;
+    void* weights;
     somConfig *config = getsomDefaultConfig();
     dataVector *data = getIrisData(config);
     for(int i=oneD;i<=threeD;i++)
     {
         config->dimension=i;
-        weights = (somNeuron**)getsom(data, config);
-
+        weights = getsom(data, config);
         somScoreResult* result = getscore(data, weights, config);
         int activatedNodes = 0;
         displayConfig(config);
