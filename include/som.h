@@ -15,6 +15,8 @@ typedef struct somNeuron{
     int c;
     short isStabilized;
     double* updates;
+    int* entries;
+    int ec;
 } somNeuron;
 
 //scoring statistics for one neuron

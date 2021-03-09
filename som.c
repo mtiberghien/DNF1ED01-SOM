@@ -8,7 +8,7 @@
 //som1D.data will store history for 1D map
 //som2D.data will store history for 2D map
 //som3D.data will store history for 3D map
-//#define TRACE_SOM 15
+#define TRACE_SOM 2
 
 #pragma region Config Section
 somConfig* getsomDefaultConfig(){
@@ -16,17 +16,17 @@ somConfig* getsomDefaultConfig(){
     
 #ifdef TRACE_SOM
     config->normalize = 0;
-    config->stabilizationTrigger = 0.05;
+    config->stabilizationTrigger = 0.01;
 #else
     config->normalize = 1;
-    config->stabilizationTrigger = 0.01;
+    config->stabilizationTrigger = 0.005;
 #endif
     config->dimension = twoD;
     config->alpha = 0.99;
+    config->alphaDecreaseRate=0.99;
     config->sigma = 0.99;
     config->sigmaDecreaseRate=0.95;
-    config->alphaDecreaseRate=0.99;
-    config->radiusDecreaseRate = 3;
+    config->radiusDecreaseRate = 5;
     config->initialPercentCoverage = 0.6;
     config->maxEpisodes = 1000;
 }
@@ -57,6 +57,8 @@ void initNeuron(somNeuron*n, somConfig config, dataBoundary *boundaries, int b, 
     n->neighbours = NULL;
     n->nc = 0;
     n->updates = (double*)calloc(config.p , sizeof(double));
+    n->entries = (int*)malloc(sizeof(int));
+    n->ec=0;
     n->isStabilized = 0;
     for(int j=0;j<config.p;j++)
     {
@@ -116,16 +118,18 @@ void setMap1DSize(somConfig *config)
 
 void set2DMapSize(somConfig *config)
 {
-    //Arbitrary 4/3 ratio (16/9 didn't exist in the eighties ;))
-    double ratio = 4.0/3;
-    int y = floor(sqrt(config->nw / ratio));
-    y-=config->nw%y;
-    int x = config->nw/y;
-    if(config->nw%(x*y)>0){
-        config->nw = x*y;
+    if(!config->map_r|| !config->map_c)
+    {
+        //Arbitrary 4/3 ratio (16/9 didn't exist in the eighties ;))
+        double ratio = 4.0/3;
+        int y = floor(sqrt(config->nw / ratio));
+        y-=config->nw%y;
+        int x = config->nw/y;
+        config->map_r=y;
+        config->map_c=x;      
     }
-    config->map_r=y;
-    config->map_c=x;
+
+    config->nw = config->map_r*config->map_c;
     if(!config->radius){
         config->radius = ceil((sqrt(config->initialPercentCoverage*config->nw) - 1)/2);
     }
@@ -133,13 +137,15 @@ void set2DMapSize(somConfig *config)
 
 void set3DMapSize(somConfig *config)
 {
-    int size = ceil(cbrt(config->nw));
-    if(config->nw%((int)pow(size,3))>0){
-        config->nw = (int)pow(size, 3);
+    if(!config->map_b || !config->map_r|| !config->map_c)
+    {
+        int size = ceil(cbrt(config->nw));
+        config->map_r=size;
+        config->map_c=size;
+        config->map_b=size;       
     }
-    config->map_r=size;
-    config->map_c=size;
-    config->map_b=size;
+    config->nw = config->map_b*config->map_r*config->map_c;
+   
     if(!config->radius){
         config->radius = ceil((cbrt(config->initialPercentCoverage*config->nw)-1)/2);
     }
@@ -155,9 +161,7 @@ void* getsom1D(dataVector* data, somConfig *config, dataBoundary* boundaries)
 
 void* getsom2D(dataVector* data, somConfig *config, dataBoundary* boundaries)
 {
-    if(!config->map_r|| !config->map_c){
-        set2DMapSize(config);
-    }
+    set2DMapSize(config);
     somNeuron **weights = (somNeuron**)malloc(config->map_r * sizeof(somNeuron*));
     initialize2D(weights, *config, boundaries);
     return weights;
@@ -165,9 +169,7 @@ void* getsom2D(dataVector* data, somConfig *config, dataBoundary* boundaries)
 
 void* getsom3D(dataVector* data, somConfig *config, dataBoundary* boundaries)
 {
-    if(!config->map_b || !config->map_r|| !config->map_c){
-        set3DMapSize(config);
-    }
+    set3DMapSize(config);
     somNeuron ***weights = (somNeuron***)malloc(config->map_b * sizeof(somNeuron**));
     initialize3D(weights, *config, boundaries);
     return weights;
@@ -209,21 +211,24 @@ double distance_function(double *v, double *w, int p)
 }
 
 //Return the index of the neuron closest to a entry vector using the distance_function for 1D map
-somNeuron* find_winner1D(dataVector* v, void *weights, int nw, int p)
+somNeuron* find_winner1D(dataVector* v, somNeuron *weights, int nw, int p, short includeStabilized)
 {
-    somNeuron* som = (somNeuron*)weights;
     somNeuron **results = malloc(sizeof(somNeuron*));
     int count = 1;
     double minValue = __DBL_MAX__;
     for(int i = 0; i<nw; i++){
-        double distance = distance_function(v->v, som[i].v, p);
-        if(distance<minValue){
-            results[count-1]= &som[i];
-            minValue = distance;
-        }
-        else if(distance == minValue){
-            results = realloc(results, ++count*sizeof(int));
-            results[count-1]= &som[i];
+        somNeuron* n = &weights[i];
+        if(includeStabilized || !n->isStabilized)
+        {
+            double distance = distance_function(v->v, n->v, p);
+            if(distance<minValue){
+                results[count-1]= n;
+                minValue = distance;
+            }
+            else if(distance == minValue){
+                results = realloc(results, ++count*sizeof(int));
+                results[count-1]= n;
+            }
         }
     }
     int selectedIndex = count > 1 ? rand()%count : 0;
@@ -233,7 +238,7 @@ somNeuron* find_winner1D(dataVector* v, void *weights, int nw, int p)
 }
 
 //Return the index of the neuron closest to a entry vector using the distance_function for 2D map
-somNeuron* find_winner2D(dataVector* v, somNeuron** weights, somConfig *config)
+somNeuron* find_winner2D(dataVector* v, somNeuron** weights, somConfig *config, int includeStabilized)
 {
     somNeuron **results = malloc(sizeof(somNeuron*));
     int count = 1;
@@ -242,14 +247,18 @@ somNeuron* find_winner2D(dataVector* v, somNeuron** weights, somConfig *config)
     {
         for(int j=0;j<config->map_c;j++)
         {
-            double distance = distance_function(v->v, weights[i][j].v, config->p);
-            if(distance<minValue){
-                results[count-1]= &weights[i][j];
-                minValue = distance;
-            }
-            else if(distance == minValue){
-                results = realloc(results, ++count*sizeof(int));
-                results[count-1]= &weights[i][j];
+            somNeuron* n = &weights[i][j];
+            if(includeStabilized || !n->isStabilized)
+            {
+                double distance = distance_function(v->v, n->v, config->p);
+                if(distance<minValue){
+                    results[count-1]= n;
+                    minValue = distance;
+                }
+                else if(distance == minValue){
+                    results = realloc(results, ++count*sizeof(int));
+                    results[count-1]= n;
+                }
             }
         }
 
@@ -261,9 +270,8 @@ somNeuron* find_winner2D(dataVector* v, somNeuron** weights, somConfig *config)
 }
 
 //Return the index of the neuron closest to a entry vector using the distance_function for 3D map
-somNeuron* find_winner3D(dataVector* v, void *weights, somConfig *config)
+somNeuron* find_winner3D(dataVector* v, somNeuron*** weights, somConfig *config, int includeStabilized)
 {
-    somNeuron*** som = (somNeuron***)weights;
     somNeuron **results = malloc(sizeof(somNeuron*));
     int count = 1;
     double minValue = __DBL_MAX__;
@@ -273,14 +281,18 @@ somNeuron* find_winner3D(dataVector* v, void *weights, somConfig *config)
         {
             for(int k=0;k<config->map_c;k++)
             {
-                double distance = distance_function(v->v, som[i][j][k].v, config->p);
-                if(distance<minValue){
-                    results[count-1]= &som[i][j][k];
-                    minValue = distance;
-                }
-                else if(distance == minValue){
-                    results = realloc(results, ++count*sizeof(int));
-                    results[count-1]= &som[i][j][k];
+                somNeuron* n = &weights[i][j][k];
+                if(includeStabilized || !n->isStabilized)
+                {
+                    double distance = distance_function(v->v, n->v, config->p);
+                    if(distance<minValue){
+                        results[count-1]= n;
+                        minValue = distance;
+                    }
+                    else if(distance == minValue){
+                        results = realloc(results, ++count*sizeof(int));
+                        results[count-1]= n;
+                    }
                 }
             }
         }
@@ -361,14 +373,19 @@ short updateNeuron3D(dataVector* v, somNeuron* winner, somNeuron* n, somConfig* 
     return updateNeuron(v, n, h, config);
 }
 
+void clear_neigbhoursAtom(somNeuron* n)
+{
+    free(n->neighbours);
+    n->neighbours = NULL;
+    n->nc = 0;
+}
+
 void clear_neighbours1D(void* weights, somConfig* config)
 {
     somNeuron* som = (somNeuron*)weights;
     for(int i=0; i< config->map_c; i++)
     {
-        free(som[i].neighbours);
-        som[i].neighbours = NULL;
-        som[i].nc = 0;
+        clear_neigbhoursAtom(&som[i]);
     }
 }
 
@@ -395,14 +412,19 @@ void getNeighbours1D(somNeuron* n, somNeuron* weights, somConfig* config)
     //TODO: Add cosed map handling
     int start = max(0, n->c - config->radius);
     int end = min(config->map_c, n->c + config->radius);
-    n->nc = end - start;
     int in=0;
-    n->neighbours = (somNeuron**)malloc((n->nc)*sizeof(somNeuron*));
+    n->neighbours = (somNeuron**)malloc(sizeof(somNeuron*));
     for(int i=start;i<end;i++)
     {
-        n->neighbours[in]= &weights[i];
-        in++;
+        somNeuron* nb = &weights[i];
+        if(!nb->isStabilized)
+        {
+            n->neighbours = realloc(n->neighbours, (in+1)*sizeof(somNeuron*));
+            n->neighbours[in]= nb;
+            in++;
+        }
     }
+    n->nc=in;
 }
 
 void getNeighbours2D(somNeuron* n, somNeuron** weights, somConfig* config)
@@ -414,17 +436,22 @@ void getNeighbours2D(somNeuron* n, somNeuron** weights, somConfig* config)
     int end_c = min(config->map_c, n->c + config->radius);
     int rc = (end_r - start_r);
     int cc = (end_c - start_c);
-    n->nc = rc * cc;
     int in=0;
-    n->neighbours = (somNeuron**)malloc((n->nc)*sizeof(somNeuron*));
+    n->neighbours = (somNeuron**)malloc(sizeof(somNeuron*));
     for(int i=start_r;i<end_r;i++)
     {
         for(int j=start_c;j<end_c;j++)
         {
-            n->neighbours[in]= &weights[i][j];
-            in++;
+            somNeuron* nb = &weights[i][j];
+            if(!nb->isStabilized)
+            {
+                n->neighbours = realloc(n->neighbours, (in+1)*sizeof(somNeuron*));
+                n->neighbours[in]= nb;
+                in++;
+            }
         }
     }
+    n->nc = in;
 }
 
 void getNeighbours3D(somNeuron* n, somNeuron*** weights, somConfig* config)
@@ -439,21 +466,26 @@ void getNeighbours3D(somNeuron* n, somNeuron*** weights, somConfig* config)
     int rc = end_r - start_r;
     int cc = end_c - start_c;
     int bc = end_b - start_b;
-    n->nc = rc * cc * bc;
     int in=0;
-    n->neighbours = (somNeuron**)malloc((n->nc)*sizeof(somNeuron*));
+    n->neighbours = (somNeuron**)malloc(sizeof(somNeuron*));
     for(int i=start_b;i<end_b;i++)
     {
         for(int j=start_r;j<end_r;j++)
         {
             for(int k=start_c;k<end_c;k++)
             {
-                n->neighbours[in]= &weights[i][j][k];
-                in++;
+                somNeuron* nb = &weights[i][j][k];
+                if(!nb->isStabilized)
+                {
+                    n->neighbours = realloc(n->neighbours, (in+1)*sizeof(somNeuron*));
+                    n->neighbours[in]= nb;
+                    in++;
+                }
             }
 
         }
     }
+    n->nc = in;
 }
 
 //Update winner neuron and neighbours for 1D map return 1 if at least one neuron was updated 0 otherwise
@@ -502,21 +534,30 @@ short updateNeurons3D(dataVector* v, somNeuron* winner, somNeuron  ***weights, s
 }
 #pragma endregion
 
+void updateWinner(somNeuron* winner, int vectorIndex)
+{
+    winner->entries[winner->ec++]=vectorIndex;
+    winner->entries=realloc(winner->entries, (winner->ec+1)*sizeof(int));
+}
+
 short learn1D(int vectorIndex, dataVector* v, void* weights, somConfig* config)
 {
-    somNeuron* winner = find_winner1D(v, weights, config->nw, config->p);
+    somNeuron* winner = find_winner1D(v, weights, config->nw, config->p, 0);
+    updateWinner(winner, vectorIndex);
     return updateNeurons1D(v, winner, (somNeuron*)weights, config);
 }
 
 short learn2D(int vectorIndex, dataVector* v, void* weights, somConfig* config)
 {
-    somNeuron* winner = find_winner2D(v, weights, config);
+    somNeuron* winner = find_winner2D(v, weights, config, 0);
+    updateWinner(winner, vectorIndex);
     return updateNeurons2D(v, winner, (somNeuron**)weights, config);
 }
 
 short learn3D(int vectorIndex, dataVector* v, void* weights, somConfig* config)
 {
-   somNeuron* winner = find_winner3D(v, weights, config);
+   somNeuron* winner = find_winner3D(v, weights, config, 0);
+   updateWinner(winner, vectorIndex);
    return updateNeurons3D(v, winner, (somNeuron***)weights, config);
 }
 #pragma endregion
@@ -573,8 +614,12 @@ void clear_mem1D(void* weights, void* score, somConfig* config)
     for(int i = 0; i < config->map_c; i++)
     {
         free(som[i].v);
-        free(som[i].neighbours);
+        if(som[i].neighbours)
+        {
+            free(som[i].neighbours);
+        }
         free(som[i].updates);
+        free(som[i].entries);
         if(sc)
         {
             free(sc[i].scores);
@@ -653,7 +698,37 @@ short getIsStabilized(double* updates, somConfig* config)
    return 1;
 }
 
-short updateStabilized1D(void* weights, somConfig* config)
+int indexOf(int array[], int count, int value)
+{
+    for(int i = 0;i<count;i++)
+    {
+        if(array[i]==value)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void updateStabilizedVectors(int* stabilizedVectors, somConfig* config, somNeuron*n)
+{
+    int index = config->n-1;
+    for(int j=0;j<n->ec;j++)
+    {
+        int e = n->entries[j];
+        int ep = stabilizedVectors[e];
+        int pos = ep == e ? e : indexOf(stabilizedVectors, index+1, e);
+        if(pos>=0)
+        {
+            stabilizedVectors[pos]=stabilizedVectors[index];
+            stabilizedVectors[index]=e;
+            index--;
+        }
+    }
+    config->n=index+1;
+}
+
+short updateStabilized1D(void* weights, somConfig* config, int* stabilizedVectors)
 {
     short stabilized = 1;
     somNeuron* som = (somNeuron*)weights;
@@ -663,28 +738,41 @@ short updateStabilized1D(void* weights, somConfig* config)
         n->isStabilized = getIsStabilized(n->updates, config);
         stabilized = n->isStabilized & stabilized;
         n->updates = (double*)calloc(config->p, sizeof(double));
+        if(n->isStabilized)
+        {
+            updateStabilizedVectors(stabilizedVectors, config, n);
+            for(int i = 0;i<n->nc;i++)
+            {
+                somNeuron* nb = n->neighbours[i];
+                if(nb!=n)
+                {
+                    clear_neigbhoursAtom(nb);
+                }
+            }
+            clear_neigbhoursAtom(n);
+        }
     }
     return stabilized;
 }
 
-short updateStabilized2D(void* weights, somConfig* config)
+short updateStabilized2D(void* weights, somConfig* config, int* stabilizedVectors)
 {
     short stabilized = 1;
     somNeuron** som = (somNeuron**)weights;
     for(int i=0;i<config->map_r;i++)
     {
-       stabilized = updateStabilized1D(som[i], config) & stabilized;
+       stabilized = updateStabilized1D(som[i], config, stabilizedVectors) & stabilized;
     }
     return stabilized;
 }
 
-short updateStabilized3D(void* weights, somConfig* config)
+short updateStabilized3D(void* weights, somConfig* config, int* stabilizedVectors)
 {
     short stabilized = 1;
     somNeuron*** som = (somNeuron***)weights;
     for(int i=0;i<config->map_b;i++)
     {
-        stabilized = updateStabilized2D(som[i], config) & stabilized;
+        stabilized = updateStabilized2D(som[i], config, stabilizedVectors) & stabilized;
     }
     return stabilized;
 }
@@ -704,7 +792,7 @@ void* getsom(dataVector* data, somConfig *config)
     void* (*initfp)(dataVector*, somConfig*, dataBoundary*);
     short (*learnfp)(int, dataVector*, void*, somConfig*);
     void (*clearnbfp)(void*, somConfig*);
-    short (*updatestfp)(void*, somConfig*);
+    short (*updatestfp)(void*, somConfig*, int*);
 #ifdef TRACE_SOM
     void (*clearscorefp)(void*, somConfig*);
 #endif
@@ -762,7 +850,6 @@ void* getsom(dataVector* data, somConfig *config)
             int proposed = vectorsToPropose[ivector];
             learnfp(proposed, &data[proposed], weights, &cfg);
             vectorsToPropose[ivector] = vectorsToPropose[i];
-            vectorsToPropose[i] = i;
 #ifdef TRACE_SOM
                 if(time++%TRACE_SOM == 0)
                 {
@@ -783,7 +870,11 @@ void* getsom(dataVector* data, somConfig *config)
             }         
         }
         episode++;
-        hasStabilized = updatestfp(weights, &cfg);
+        hasStabilized = updatestfp(weights, &cfg, stabilizedVectors);
+        for(int i=cfg.n-1;i>=0;i--)
+        {
+            vectorsToPropose[i]=stabilizedVectors[i];
+        }
         again = !hasStabilized && episode <cfg.maxEpisodes;
     }
     if(hasStabilized)
@@ -893,7 +984,7 @@ void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     for(int i=0;i<config->n;i++)
     {
         dataVector v = data[i];
-        somNeuron* winner = find_winner1D(&v, weights, config->nw, config->p);
+        somNeuron* winner = find_winner1D(&v, weights, config->nw, config->p, 1);
         updateScore(&score[winner->c], v.class, i);
 
     }
@@ -921,7 +1012,7 @@ void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     for(int i=0;i<config->n;i++)
     {
         dataVector v = data[i];
-        somNeuron* winner = find_winner2D(&v, weights, config);
+        somNeuron* winner = find_winner2D(&v, weights, config, 1);
         updateScore(&score[winner->r][winner->c], v.class, i);
     }
     for(int i=0;i<config->map_r;i++)
@@ -956,7 +1047,7 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     for(int i=0;i<config->n;i++)
     {
         dataVector v = data[i];
-        somNeuron* winner = find_winner3D(&v, weights, config);
+        somNeuron* winner = find_winner3D(&v, weights, config , 1);
         updateScore(&score[winner->b][winner->r][winner->c],v.class, i);
     }
     for(int i=0;i<config->map_b;i++)
@@ -1054,9 +1145,9 @@ void displayConfig(somConfig* config)
                         "Neighborhood coverage", config->initialPercentCoverage *100);
     if(config->dimension == threeD)
     {
-        printf("%21s: %d×\n", "Map blocks", config->map_b);  
+        printf("%21s: %d\n", "Map blocks", config->map_b);  
     }
-    else if(config->dimension != oneD)
+    if(config->dimension != oneD)
     {
         printf("%21s: %d\n","Map rows", config->map_r);
     }                                      
