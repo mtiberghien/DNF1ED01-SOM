@@ -870,6 +870,15 @@ void* getsom(dataVector* data, somConfig *config)
         episode++;
         again = cfg.n !=0 && episode <cfg.maxEpisodes;
     }
+#ifdef TRACE_SOM
+                if(time++%TRACE_SOM == 0)
+                {
+                    somScoreResult* result = getscore(data, weights, config);
+                    writeAppend(stepId++, weights, config, result);
+                    clearscorefp(result->scores, config);
+                    free(result);
+                }
+#endif   
     if(cfg.n == 0)
     {
         printf("Stabilized after %d episodes\n", episode);

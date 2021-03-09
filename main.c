@@ -12,6 +12,12 @@ int main()
     for(int i=oneD;i<=threeD;i++)
     {
         config->dimension=i;
+        if(i == threeD)
+        {
+            config->map_b = 3;
+            config->map_r = 4;
+            config->map_c = 5;
+        }
         weights = (somNeuron**)getsom(data, config);
 
         somScoreResult* result = getscore(data, weights, config);
