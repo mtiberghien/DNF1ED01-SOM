@@ -67,6 +67,7 @@ typedef struct somConfig{
 typedef struct dataBoundary{
     double min;
     double max;
+    double mean;
 } dataBoundary;
 #endif
 

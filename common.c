@@ -53,13 +53,22 @@ void calculateBoundaries(dataVector *data, dataBoundary *boundaries, somConfig* 
     int p = config->p;
     int n = config->n;
     for(int i=0; i<p; i++){
-        dataBoundary b = {__DBL_MAX__, __DBL_MIN__};
+        dataBoundary b = {__DBL_MAX__, __DBL_MIN__, 0};
         boundaries[i]= b;
     }
-    for(int i = 0; i<n; i++){
-        for(int j =0; j<p; j++){
+    for(int i = 0; i<n; i++)
+    {
+        for(int j =0; j<p; j++)
+        {
             boundaries[j].min = min(data[i].v[j], boundaries[j].min);
             boundaries[j].max = max(data[i].v[j], boundaries[j].max);
+            boundaries[j].mean + data[i].v[j];
         }
+    }
+    for(int i =0; i<p; i++)
+    {
+            boundaries[i].mean /=n;
+            boundaries[i].max = boundaries[i].mean + 0.1*(boundaries[i].max-boundaries[i].mean);
+            boundaries[i].min = boundaries[i].mean - 0.1*(boundaries[i].mean-boundaries[i].min);
     }
 }

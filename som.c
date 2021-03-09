@@ -16,15 +16,15 @@ somConfig* getsomDefaultConfig(){
     
 #ifdef TRACE_SOM
     config->normalize = 0;
-    config->stabilizationTrigger = 0.01;
+    config->stabilizationTrigger = 0.05;
 #else
     config->normalize = 1;
-    config->stabilizationTrigger = 0.01;
+    config->stabilizationTrigger = 0.001;
 #endif
     config->dimension = twoD;
-    config->alpha = 0.99;
+    config->alpha = 0.9;
     config->alphaDecreaseRate=0.99;
-    config->sigma = 0.99;
+    config->sigma = 0.9;
     config->sigmaDecreaseRate=0.90;
     config->radiusDecreaseRate = 5;
     config->initialPercentCoverage = 0.6;
@@ -436,10 +436,6 @@ void clear_neighbours3D(void* weights, somConfig* config)
 //Update winner neuron and neighbours for 1D map return 1 if at least one neuron was updated 0 otherwise
 void updateNeurons1D(dataVector* v, somNeuron* winner, somNeuron  *weights, somConfig* config)
 {
-    if(!winner->neighbours)
-    {
-        getNeighbours1D(winner, weights, config,0);
-    }
     for(int i=0; i<winner->nc;i++)
     {
       updateNeuron1D(v, winner, winner->neighbours[i], config);        
@@ -449,10 +445,6 @@ void updateNeurons1D(dataVector* v, somNeuron* winner, somNeuron  *weights, somC
 //Update winner neuron and neighbours for 2D map return 1 if at least one neuron was updated 0 otherwise
 void updateNeurons2D(dataVector* v, somNeuron* winner, somNeuron  **weights, somConfig* config)
 {
-    if(!winner->neighbours)
-    {
-        getNeighbours2D(winner, weights, config, 0);
-    }
     for(int i=0; i<winner->nc;i++)
     {
       updateNeuron2D(v, winner, winner->neighbours[i], config);      
@@ -462,10 +454,6 @@ void updateNeurons2D(dataVector* v, somNeuron* winner, somNeuron  **weights, som
 //Update winner neuron and neighbours for 2D map return 1 if at least one neuron was updated 0 otherwise
 void updateNeurons3D(dataVector* v, somNeuron* winner, somNeuron  ***weights, somConfig* config)
 {
-    if(!winner->neighbours)
-    {
-        getNeighbours3D(winner, weights, config, 0);
-    }
     for(int i=0; i<winner->nc;i++)
     {
       updateNeuron3D(v, winner, winner->neighbours[i], config);     
