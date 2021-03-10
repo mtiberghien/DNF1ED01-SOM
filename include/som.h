@@ -32,7 +32,7 @@ typedef struct somScoreResult
 //Get default settings for SOM
 somConfig* getsomDefaultConfig();
 //Get Initialized weights vectors for a specific dataset specific config and data boundaries
-void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries);
+void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, short silent);
 //Append the current state of SOM neurons (one line by neuron) using provided step id and score
 void writeAppend(long stepid, somNeuron *weights, somConfig* config, somScoreResult* scoreResult);
 //Write the neurons as csv

@@ -16,18 +16,17 @@ somConfig* getsomDefaultConfig(){
     
 #ifdef TRACE_SOM
     config->normalize = 0;
-    config->stabilizationTrigger = 0.01;
 #else
     config->normalize = 1;
-    config->stabilizationTrigger = 0.001;
 #endif
+    config->stabilizationTrigger = 0.001;
     config->dimension = twoD;
     config->alpha = 0.99;
-    config->alphaDecreaseRate=0.99;
+    config->alphaDecreaseRate=0.999;
     config->sigma = 0.99;
     config->sigmaDecreaseRate=0.95;
     config->radiusDecreaseRate = 5;
-    config->initialPercentCoverage = 0.65;
+    config->initialPercentCoverage = 0.6;
     config->maxEpisodes = 1000;
 }
 
@@ -45,7 +44,7 @@ void resetConfig(somConfig* config)
 #pragma region Init Section
 //Return a random value between a boundary
 double getRandom(dataBoundary boundary){
-    return (((double)rand()/RAND_MAX)*(boundary.max - boundary.min)) + boundary.min;
+    return (((double)rand()/RAND_MAX)*(boundary.max - boundary.min)) + boundary.mean;
 }
 
 void initNeuron(somNeuron*n, somConfig* config, dataBoundary *boundaries, int b, int r, int c)
@@ -720,15 +719,18 @@ int updateStabilized3D(void* weights, somConfig* config, int* stabilizedVectors)
 }
 
 //Get stabilized som neurons that has been train using provided data and config
-void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries)
+void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, short silent)
 {
     
     if(!config->nw){
         config->nw = floor(5 *sqrt(config->n *1.0));
         config->nw -= config->nw%12;
     }
-   
-    printf("Calculating  %dD SOM for %d entries and %d parameters :", config->dimension, config->n, config->p);
+    if(!silent)
+    {
+        printf("Calculating  %dD SOM for %d entries and %d parameters :", config->dimension, config->n, config->p);
+    }
+    
     void* (*initfp)(dataVector*, somConfig*, dataBoundary*);
     void (*learnfp)(int, dataVector*, void*, somConfig*);
     void (*clearnbfp)(void*, somConfig*);
@@ -772,7 +774,10 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries)
     void* weights = initfp(data, config, boundaries);
     if(config->nw == 0)
     {
-        printf("Aborted, need at least one neuron\n");
+        if(!silent)
+        {
+            printf("Aborted, need at least one neuron\n");
+        }
         return weights;
     }
     clearnbfp(weights, config);
@@ -840,14 +845,17 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries)
     writeAppend(stepId++, weights, config, result);
     clearscorefp(result->scores, config);
     free(result);
-#endif   
-    if(nStabilized == config->nw)
+#endif
+    if(!silent)
     {
-        printf("Stabilized after %d episodes\n", episode);
-    }
-    else
-    {
-        printf("Stopped unstabilized after %d ", episode);
+        if(nStabilized == config->nw)
+        {
+            printf("Stabilized after %d episodes\n", episode);
+        }
+        else
+        {
+            printf("Stopped unstabilized after %d ", episode);
+        }
     }
     
     return weights;
