@@ -19,7 +19,7 @@
     {
       "name": "current_step",
       "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 1420, "step": 1},
+      "bind": {"input": "range", "min": -1, "max": 1434, "step": 1},
       "on": [
         {
           "events": "timer{100}",
@@ -382,9 +382,7 @@
         "enter": {"stroke": {"field": "secondary", "scale": "color"}},
         "update": {
           "opacity": {"signal": "datum.stabilized ? 0.5:1"},
-          "tooltip": {
-            "signal": "{'coords':'['+datum.x+','+datum.y+','+datum.z+']'}"
-          },
+          "tooltip": {"signal": "'['+datum.x+','+datum.y+','+datum.z+']'"},
           "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
           "size": [
             {

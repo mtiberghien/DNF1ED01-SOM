@@ -14,9 +14,13 @@ typedef struct somNeuron{
     int r;
     //column index (used in all dimensions)
     int c;
+    //1 if the neuron is considered as stabilized, 0 otherwise
     short isStabilized;
+    //Stores the sum of updates made to a neuron during one episode
     double* updates;
+    //Stores the indexes of entries that activated the neuron during one episode
     int* entries;
+    //Stores the number of entries that activated the neuron during one episode
     int ec;
 } somNeuron;
 
@@ -28,6 +32,7 @@ typedef struct dataVector{
     double norm;
     //stores optionnaly the known label for further validation
     int class;
+    //Stores the last winner for the data entry
     somNeuron* lastWinner;
 } dataVector;
 
@@ -103,4 +108,6 @@ double normalizeVector(double* v, int p);
 void denormalizeVector(double* v, int p, double norm);
 //Free data memory
 void clear_data(dataVector* data, somConfig* config);
+//Calculate the boundaries for a dataset calculating the mean for each parameter and boudaries around the mean
+//These boundaries will be then used by getSom method to set random initial position for the neurons
 void calculateBoundaries(dataVector* data, dataBoundary* boundaries, somConfig* config);
