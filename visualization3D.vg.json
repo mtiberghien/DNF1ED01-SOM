@@ -22,7 +22,7 @@
       "bind": {"input": "range", "min": -1, "max": 1420, "step": 1},
       "on": [
         {
-          "events": "timer[50]",
+          "events": "timer{100}",
           "update": "autoplay ? (current_step >= steps[1] ? -1 :current_step + 1 ): current_step"
         }
       ]

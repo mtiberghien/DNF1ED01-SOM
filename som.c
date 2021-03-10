@@ -45,7 +45,7 @@ void resetConfig(somConfig* config)
 #pragma region Init Section
 //Return a random value between a boundary
 double getRandom(dataBoundary boundary){
-    return (((double)rand()/RAND_MAX)*(boundary.max - boundary.min)) + boundary.mean;
+    return (((double)rand()/RAND_MAX)*(boundary.max - boundary.min)) + boundary.min;
 }
 
 void initNeuron(somNeuron*n, somConfig* config, dataBoundary *boundaries, int b, int r, int c)

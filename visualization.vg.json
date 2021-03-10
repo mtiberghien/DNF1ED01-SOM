@@ -1,7 +1,7 @@
 {
   "$schema": "https://vega.github.io/schema/vega/v5.json",
-  "width": 800,
-  "height": 600,
+  "width": 600,
+  "height": 450,
   "background": "black",
   "signals": [
     {
@@ -10,7 +10,7 @@
       "bind": {"input": "range", "min": -1, "max": 2047, "step": 1},
       "on": [
         {
-          "events": "timer[10]",
+          "events": "timer{100}",
           "update": "autoplay ? (current_step >= steps[1] ? -1 :current_step + 1 ): current_step"
         }
       ]
@@ -106,7 +106,7 @@
           "entries"
         ]
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNN6UW57FAZ36R4JQ2DAKEWPY",
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNOLITE24TLC6B5LJ5TAKG36G",
       "transform": [
         {"type": "extent", "signal": "steps", "field": "step"},
         {"type": "extent", "signal": "scores", "field": "score"},
@@ -229,7 +229,7 @@
   ],
   "scales": [
     {
-      "name": "xscale-iris",
+      "name": "xscale",
       "type": "linear",
       "domain": {"data": "iris", "field": "x"},
       "zero": false,
@@ -239,29 +239,9 @@
       ]
     },
     {
-      "name": "yscale-iris",
-      "type": "linear",
-      "domain": {"data": "iris", "field": "y"},
-      "range": [
-        {"signal": "height*(1-scale)/2"},
-        {"signal": "height*(1+scale)/2"}
-      ],
-      "zero": false
-    },
-    {
-      "name": "xscale",
-      "type": "linear",
-      "domain": {"data": "neurons", "field": "x"},
-      "zero": false,
-      "range": [
-        {"signal": "width*(1-scale)/2"},
-        {"signal": "width*(scale+1)/2"}
-      ]
-    },
-    {
       "name": "yscale",
       "type": "linear",
-      "domain": {"data": "neurons", "field": "y"},
+      "domain": {"data": "iris", "field": "y"},
       "range": [
         {"signal": "height*(1-scale)/2"},
         {"signal": "height*(1+scale)/2"}
@@ -359,8 +339,8 @@
           "size": {"value": 30, "mult": {"signal": "neuronscale"}},
           "opacity": {"signal": "showrealdata && !showmap ? 0.5 : 0"},
           "fill": {"field": "class", "scale": "color"},
-          "xc": {"field": "x", "scale": "xscale-iris"},
-          "yc": {"field": "y", "scale": "yscale-iris"}
+          "xc": {"field": "x", "scale": "xscale"},
+          "yc": {"field": "y", "scale": "yscale"}
         }
       }
     },
@@ -373,8 +353,8 @@
           "size": {"value": 30, "mult": {"signal": "neuronscale"}},
           "opacity": {"signal": "showrealdata && !showmap ? 0.5 : 0"},
           "fill": {"value": "white"},
-          "xc": {"field": "x", "scale": "xscale-iris"},
-          "yc": {"field": "y", "scale": "yscale-iris"}
+          "xc": {"field": "x", "scale": "xscale"},
+          "yc": {"field": "y", "scale": "yscale"}
         }
       }
     },

@@ -68,7 +68,5 @@ void calculateBoundaries(dataVector *data, dataBoundary *boundaries, somConfig* 
     for(int i =0; i<p; i++)
     {
             boundaries[i].mean /=n;
-            boundaries[i].max = boundaries[i].mean + 0.01*(boundaries[i].max-boundaries[i].mean);
-            boundaries[i].min = boundaries[i].mean - 0.01*(boundaries[i].mean-boundaries[i].min);
     }
 }
