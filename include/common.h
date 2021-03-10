@@ -86,6 +86,10 @@ typedef struct somConfig{
     int maxEpisodes;
     // 1 if input data should be normalized, 0 otherwise -> 1 by default
     short normalize;
+    // 1 if want to use neighbour method (faster but might split some classes if to early) to find the winner
+    short useNeighboursMethod;
+    // Number of episodes to wait after starting to use neighbours method
+    int useNeighboursTrigger;
 } somConfig;
 
 // Define a value area
