@@ -8,7 +8,7 @@
 //som1D.data will store history for 1D map
 //som2D.data will store history for 2D map
 //som3D.data will store history for 3D map
-//#define TRACE_SOM 1
+#define TRACE_SOM 1
 
 #pragma region Config Section
 somConfig* getsomDefaultConfig(){
@@ -19,7 +19,7 @@ somConfig* getsomDefaultConfig(){
     config->stabilizationTrigger = 0.01;
 #else
     config->normalize = 1;
-    config->stabilizationTrigger = 0.0001;
+    config->stabilizationTrigger = 0.001;
 #endif
     config->dimension = twoD;
     config->alpha = 0.99;
@@ -27,7 +27,7 @@ somConfig* getsomDefaultConfig(){
     config->sigma = 0.99;
     config->sigmaDecreaseRate=0.95;
     config->radiusDecreaseRate = 5;
-    config->initialPercentCoverage = 0.6;
+    config->initialPercentCoverage = 0.65;
     config->maxEpisodes = 1000;
 }
 
@@ -229,20 +229,12 @@ somNeuron* getRandomNeuron3D(void* weights, somConfig* config)
     return &((somNeuron***)weights)[b][r][c];
 }
 
-somNeuron* getNearest(dataVector* v, void* weights, somConfig* config, void (*getnbfp)(somNeuron*, void*, somConfig*), somNeuron*(*getrndfp)(void*, somConfig*))
+somNeuron* getNearest(dataVector* v, void* weights, somConfig* config)
 {
-    if(!v->lastWinner)
-    {
-        v->lastWinner = getrndfp(weights, config);
-    }
     somNeuron* neuron = v->lastWinner;
     if(neuron->isStabilized)
     {
         return neuron;
-    }
-    if(!neuron->neighbours)
-    {
-        getnbfp(neuron, weights, config);
     }
     somNeuron **results = malloc(sizeof(somNeuron*));
     int count = 1;
@@ -259,14 +251,25 @@ somNeuron* getNearest(dataVector* v, void* weights, somConfig* config, void (*ge
     return result;
 }
 
-void find_winner_fromNeighbours(dataVector* v, void * weights, somConfig* config, void (*getnbfp)(somNeuron*, void*, somConfig*), somNeuron*(*getrndfp)(void*, somConfig*))
+void find_winner_fromNeighbours(dataVector* v, void * weights, somConfig* config)
 {
-    somNeuron* nearest = getNearest(v, weights, config, getnbfp, getrndfp);
+    somNeuron* nearest = getNearest(v, weights, config);
     while(nearest!=v->lastWinner)
     {
         v->lastWinner = nearest;
-        nearest = getNearest(v, weights, config, getnbfp, getrndfp);
+        nearest = getNearest(v, weights, config);
     }
+}
+
+int addNeighbour(somNeuron* parent, somNeuron* n, int count)
+{
+    if(!n->isStabilized)
+    {
+        parent->neighbours = realloc(parent->neighbours, (count+1)*sizeof(somNeuron*));
+        parent->neighbours[count]= n;
+        count++;
+    }
+    return count;    
 }
 
 void getNeighbours1D(somNeuron* n, void* weights, somConfig* config)
@@ -279,9 +282,7 @@ void getNeighbours1D(somNeuron* n, void* weights, somConfig* config)
     for(int i=start;i<end;i++)
     {
         somNeuron* nb = &som[i];
-        n->neighbours = realloc(n->neighbours, (in+1)*sizeof(somNeuron*));
-        n->neighbours[in]= nb;
-        in++;
+        in = addNeighbour(n, nb, in);
     }
     n->nc=in;
 }
@@ -302,9 +303,7 @@ void getNeighbours2D(somNeuron* n, void* weights, somConfig* config)
         for(int j=start_c;j<end_c;j++)
         {
             somNeuron* nb = &som[i][j];
-            n->neighbours = realloc(n->neighbours, (in+1)*sizeof(somNeuron*));
-            n->neighbours[in]= nb;
-            in++;
+            in = addNeighbour(n, nb, in);
         }
     }
     n->nc = in;
@@ -331,9 +330,7 @@ void getNeighbours3D(somNeuron* n, void* weights, somConfig* config)
             for(int k=start_c;k<end_c;k++)
             {
                 somNeuron* nb = &som[i][j][k];
-                n->neighbours = realloc(n->neighbours, (in+1)*sizeof(somNeuron*));
-                n->neighbours[in]= nb;
-                in++;
+                in = addNeighbour(n, nb, in);
             }
 
         }
@@ -341,23 +338,6 @@ void getNeighbours3D(somNeuron* n, void* weights, somConfig* config)
     n->nc = in;
 }
 
-//Return the index of the neuron closest to a entry vector using the distance_function for 1D map
-void find_winner1D(dataVector* v, somNeuron *weights, somConfig* config)
-{
-    find_winner_fromNeighbours(v,weights,config, getNeighbours1D, getRandomNeuron1D);
-}
-
-//Return the index of the neuron closest to a entry vector using the distance_function for 2D map
-void find_winner2D(dataVector* v, somNeuron* lastKnownWinner, somNeuron** weights, somConfig *config)
-{
-    find_winner_fromNeighbours(v,weights,config, getNeighbours2D, getRandomNeuron2D);
-}
-
-//Return the index of the neuron closest to a entry vector using the distance_function for 3D map
-void find_winner3D(dataVector* v, somNeuron*** weights, somConfig *config)
-{
-    find_winner_fromNeighbours(v,weights,config, getNeighbours3D, getRandomNeuron3D);
-}
 #pragma endregion
 
 #pragma region Update Section
@@ -425,11 +405,12 @@ void updateNeuron3D(dataVector* v, somNeuron* winner, somNeuron* n, somConfig* c
     updateNeuron(v, n, h, config);
 }
 
-void clear_neigbhoursAtom(somNeuron* n)
+void clear_neigbhoursAtom(somNeuron* n, void* weights, somConfig* config, void (*getnbfp)(somNeuron*,void*,somConfig*))
 {
     free(n->neighbours);
     n->neighbours = NULL;
     n->nc = 0;
+    getnbfp(n,weights, config);
 }
 
 void clear_neighbours1D(void* weights, somConfig* config)
@@ -437,7 +418,7 @@ void clear_neighbours1D(void* weights, somConfig* config)
     somNeuron* som = (somNeuron*)weights;
     for(int i=0; i< config->map_c; i++)
     {
-        clear_neigbhoursAtom(&som[i]);
+        clear_neigbhoursAtom(&som[i], weights, config, getNeighbours1D);
     }
 }
 
@@ -446,7 +427,10 @@ void clear_neighbours2D(void* weights, somConfig* config)
     somNeuron** som = (somNeuron**)weights;
     for(int i=0; i< config->map_r; i++)
     {
-        clear_neighbours1D(som[i], config);
+        for(int j=0; j< config->map_c; j++)
+        {
+            clear_neigbhoursAtom(&som[i][j], weights, config, getNeighbours2D);
+        }
     }
 }
 
@@ -455,7 +439,13 @@ void clear_neighbours3D(void* weights, somConfig* config)
     somNeuron*** som = (somNeuron***)weights;
     for(int i=0; i< config->map_b; i++)
     {
-        clear_neighbours2D(som[i], config);
+        for(int j=0; j< config->map_r; j++)
+        {
+            for(int k=0; k< config->map_c; k++)
+            {
+                clear_neigbhoursAtom(&som[i][j][k], weights, config, getNeighbours3D);
+            }
+        }
     }
 }
 
@@ -499,21 +489,21 @@ void updateWinner(somNeuron* winner, int vectorIndex)
 
 void learn1D(int vectorIndex, dataVector* v, void* weights, somConfig* config)
 {
-    find_winner_fromNeighbours(v,weights,config, getNeighbours1D, getRandomNeuron1D);
+    find_winner_fromNeighbours(v,weights,config);
     updateWinner(v->lastWinner, vectorIndex);
     updateNeurons1D(v, (somNeuron*)weights, config);
 }
 
 void learn2D(int vectorIndex, dataVector* v, void* weights, somConfig* config)
 {
-    find_winner_fromNeighbours(v,weights,config, getNeighbours2D, getRandomNeuron2D);
+    find_winner_fromNeighbours(v,weights,config);
     updateWinner(v->lastWinner, vectorIndex);
     updateNeurons2D(v, (somNeuron**)weights, config);
 }
 
 void learn3D(int vectorIndex, dataVector* v, void* weights, somConfig* config)
 {
-   find_winner_fromNeighbours(v,weights,config, getNeighbours3D,  getRandomNeuron3D);
+   find_winner_fromNeighbours(v,weights,config);
    updateWinner(v->lastWinner, vectorIndex);
    updateNeurons3D(v, (somNeuron***)weights, config);
 }
@@ -743,6 +733,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries)
     void (*learnfp)(int, dataVector*, void*, somConfig*);
     void (*clearnbfp)(void*, somConfig*);
     int (*updatestfp)(void*, somConfig*, int*);
+    somNeuron* (*getrndfp)(void*, somConfig*);
 #ifdef TRACE_SOM
     void (*clearscorefp)(void*, somConfig*);
 #endif
@@ -752,6 +743,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries)
          learnfp = learn1D;
          clearnbfp = clear_neighbours1D;
          updatestfp = updateStabilized1D;
+         getrndfp = getRandomNeuron1D;
 #ifdef TRACE_SOM
          clearscorefp = clear_score1D;
 #endif
@@ -761,6 +753,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries)
          learnfp = learn3D;
          clearnbfp = clear_neighbours3D;
          updatestfp = updateStabilized3D;
+         getrndfp = getRandomNeuron3D;
 #ifdef TRACE_SOM
          clearscorefp = clear_score3D;
 #endif
@@ -771,6 +764,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries)
          learnfp = learn2D;
          clearnbfp = clear_neighbours2D;
          updatestfp = updateStabilized2D;
+         getrndfp = getRandomNeuron2D;
 #ifdef TRACE_SOM
          clearscorefp = clear_score2D;
 #endif
@@ -781,11 +775,12 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries)
         printf("Aborted, need at least one neuron\n");
         return weights;
     }
+    clearnbfp(weights, config);
     somConfig cfg = *config;
     int stabilizedVectors[cfg.n];
     int vectorsToPropose[cfg.n];
     for(int i=0;i<cfg.n;i++){
-        data[i].lastWinner = NULL;
+        data[i].lastWinner = getrndfp(weights, config);
         vectorsToPropose[i]=i;
         stabilizedVectors[i]=i;
     }
@@ -953,7 +948,7 @@ void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     for(int i=0;i<config->n;i++)
     {
         dataVector* v = &data[i];
-        find_winner_fromNeighbours(v,weights,config, getNeighbours1D, getRandomNeuron1D);
+        find_winner_fromNeighbours(v,weights,config);
         somNeuron* winner = v->lastWinner;
         updateScore(&score[winner->c],v->class, i);
 
@@ -982,7 +977,7 @@ void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     for(int i=0;i<config->n;i++)
     {
         dataVector* v = &data[i];
-        find_winner_fromNeighbours(v,weights,config, getNeighbours2D, getRandomNeuron2D);
+        find_winner_fromNeighbours(v,weights,config);
         somNeuron* winner = v->lastWinner;
         updateScore(&score[winner->r][winner->c],v->class, i);
     }
@@ -1018,7 +1013,7 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     for(int i=0;i<config->n;i++)
     {
         dataVector* v = &data[i];
-        find_winner_fromNeighbours(v,weights,config, getNeighbours3D, getRandomNeuron3D);
+        find_winner_fromNeighbours(v,weights,config);
         somNeuron* winner = v->lastWinner;
         updateScore(&score[winner->b][winner->r][winner->c],v->class, i);
     }
