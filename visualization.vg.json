@@ -6,8 +6,8 @@
   "signals": [
     {
       "name": "current_step",
-      "value": 10,
-      "bind": {"input": "range", "min": -1, "max": 2258, "step": 1},
+      "value": -1,
+      "bind": {"input": "range", "min": -1, "max": 2047, "step": 1},
       "on": [
         {
           "events": "timer[10]",
@@ -21,7 +21,7 @@
       "bind": {"input": "range", "min": 0.5, "step": 0.1, "max": 2}
     },
     {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
-    {"name": "showmap", "value": true, "bind": {"input": "checkbox"}},
+    {"name": "showmap", "value": false, "bind": {"input": "checkbox"}},
     {"name": "showrealdata", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showneurons", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showlinks", "value": false, "bind": {"input": "checkbox"}},
@@ -457,8 +457,8 @@
           "xc": {
             "field": "xc",
             "offset": {
-              "signal": "-sqrt(scale('score', datum.datum.score)/2)",
-              "mult": {"signal": "showmap ? 2.5*neuronscale:1"}
+              "signal": "-sqrt(scale('score', datum.datum.score))",
+              "mult": {"signal": "showmap ? 2*scale*neuronscale:scale"}
             }
           },
           "yc": {"field": "yc"},

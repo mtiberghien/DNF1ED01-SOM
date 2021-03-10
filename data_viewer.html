@@ -14,12 +14,17 @@
 <body style="background-color:black">
 <div id="container" style="text-align:center">
 <div id="vis" style="display:inline-block"></div>
+<div id="vis2" style="display:inline-block"></div>
 </div>
 
 
 <script type="text/javascript">
   var spec = "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/visualization.vg.json?token=ASL2ZNODDUNFAZAO7BZDMPTAJXYMO";
   vegaEmbed('#vis', spec).then(function(result) {
+  }).catch(console.error);
+  
+  var spec2 = "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/visualization3D.vg.json?token=ASL2ZNLJRIB6TWFXOOPLQJLAKG2TY";
+  vegaEmbed('#vis2', spec2).then(function(result) {
   }).catch(console.error);
 
 </script>

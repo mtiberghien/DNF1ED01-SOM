@@ -19,13 +19,18 @@
     {
       "name": "current_step",
       "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 1149, "step": 1},
+      "bind": {"input": "range", "min": -1, "max": 1420, "step": 1},
       "on": [
         {
           "events": "timer[50]",
           "update": "autoplay ? (current_step >= steps[1] ? -1 :current_step + 1 ): current_step"
         }
       ]
+    },
+    {
+      "name": "neuronscale",
+      "init": "min(width,height)/400",
+      "bind": {"input": "range", "min": 0.5, "step": 0.1, "max": 2}
     },
     {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
     {"name": "colors", "value": ["#77A7FB", "#E57368", "#FBCB43"]},
@@ -66,7 +71,7 @@
     },
     {
       "name": "rotation_HOR",
-      "value": 45,
+      "value": 305,
       "bind": {"input": "range", "min": 0, "max": 360, "step": 1},
       "on": [
         {"events": {"signal": "validAngle_HOR"}, "update": "validAngle_HOR"}
@@ -74,7 +79,7 @@
     },
     {
       "name": "rotation_VER",
-      "value": 65,
+      "value": 55,
       "bind": {"input": "range", "min": 0, "max": 360, "step": 1},
       "on": [
         {"events": {"signal": "validAngle_VER"}, "update": "validAngle_VER"}
@@ -331,7 +336,7 @@
       "name": "score",
       "type": "linear",
       "domain": {"signal": "scores"},
-      "range": [50, 500]
+      "range": [{"signal": "50*neuronscale"}, {"signal": "300*neuronscale"}]
     },
     {
       "name": "label",
@@ -382,7 +387,11 @@
           },
           "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
           "size": [
-            {"field": "score", "scale": "score", "mult": {"signal": "4*scale"}}
+            {
+              "field": "score",
+              "scale": "score",
+              "mult": {"signal": "4*scale*neuronscale"}
+            }
           ],
           "fill": [{"field": "class", "scale": "color"}],
           "xc": [{"field": "px", "scale": "xscale"}],
