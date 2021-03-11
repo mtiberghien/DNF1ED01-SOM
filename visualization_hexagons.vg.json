@@ -1,0 +1,191 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "width": 500,
+  "height": 300,
+  "autosize": "none",
+  "background": "black",
+  "signals": [
+    {
+      "name": "current_step",
+      "value": -1,
+      "bind": {"input": "range", "min": -1, "max": 2171, "step": 1}
+    },
+    {"name": "rows", "init": "y_extent[1]+1"},
+    {"name": "columns", "init": "x_extent[1]+1"},
+    {
+      "name": "scale",
+      "init": "round(100*max(1,width/height))/100",
+      "bind": {"input": "range", "min": 0, "max": 2},
+      "on": [
+        {
+          "events": "view:mousewheel",
+          "update": "round(max(0, min(2, scale + (event.wheelDelta > 0 ? 0.1 : -0.1)))*100)/100"
+        }
+      ]
+    },
+    {"name": "hexalength", "update": "sin(PI)"},
+    {"name": "sizeref", "init": "min(width,height)"},
+    {"name": "sizeSymbol", "update": "bandwidth('hscale')"},
+    {"name": "hcl_white", "init": "hcl('white')"},
+    {"name": "showclasses", "value": false, "bind": {"input": "checkbox"}}
+  ],
+  "data": [
+    {
+      "name": "neurons",
+      "format": {
+        "type": "dsv",
+        "delimiter": ";",
+        "parse": {
+          "x": "number",
+          "y": "number",
+          "z": "number",
+          "step": "number",
+          "score": "number",
+          "secondary": "number",
+          "class": "number",
+          "stabilized": "number"
+        },
+        "header": [
+          "vector",
+          "x",
+          "y",
+          "z",
+          "step",
+          "score",
+          "class",
+          "secondary",
+          "stabilized",
+          "entries"
+        ]
+      },
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNOLITE24TLC6B5LJ5TAKG36G",
+      "transform": [
+        {"type": "extent", "signal": "steps", "field": "step"},
+        {"type": "filter", "expr": "datum.step === current_step"},
+        {"type": "extent", "field": "y", "signal": "y_extent"},
+        {"type": "extent", "field": "x", "signal": "x_extent"},
+        {
+          "type": "formula",
+          "expr": "split(replace(replace(datum.vector, '[',''),']',''),',')",
+          "as": "vector"
+        },
+        {
+          "type": "formula",
+          "expr": "[toNumber(datum.vector[0]),toNumber(datum.vector[1]),toNumber(datum.vector[2]),toNumber(datum.vector[3])]",
+          "as": "vector"
+        },
+        {"type": "formula", "expr": "datum.x+'.'+datum.y", "as": "id"}
+      ]
+    },
+    {
+      "name": "umatrix",
+      "source": "neurons",
+      "transform": [
+        {"type": "project", "fields": ["x", "y", "vector", "class"]},
+        {
+          "type": "formula",
+          "expr": "sequence(datum.x-1,datum.x+2,1)",
+          "as": "nx"
+        },
+        {
+          "type": "formula",
+          "expr": "sequence(datum.y-1,datum.y+2,1)",
+          "as": "ny"
+        },
+        {"type": "flatten", "fields": ["ny"]},
+        {"type": "flatten", "fields": ["nx"]},
+        {
+          "type": "filter",
+          "expr": "datum.nx >= 0 && datum.ny >=0 && datum.nx < columns && datum.ny < rows && (((datum.y%2 === 1 && datum.nx < (datum.x+1)) || (datum.y%2 === 0 && datum.nx > (datum.x-1))) || datum.ny === datum.y) && (datum.nx !== datum.x || datum.ny !== datum.y)"
+        },
+        {"type": "formula", "expr": "datum.nx+'.'+datum.ny", "as": "nid"},
+        {
+          "type": "lookup",
+          "key": "id",
+          "from": "neurons",
+          "fields": ["nid"],
+          "values": ["vector"],
+          "as": ["nvector"]
+        },
+        {"type": "flatten", "fields": ["vector", "nvector"]},
+        {
+          "type": "formula",
+          "expr": "pow(datum.vector - datum.nvector, 2)",
+          "as": "d"
+        },
+        {
+          "type": "aggregate",
+          "fields": ["d"],
+          "ops": ["sum"],
+          "groupby": ["x", "y", "nx", "ny", "class"],
+          "as": ["d"]
+        },
+        {"type": "formula", "expr": "sqrt(datum.d)", "as": "d"},
+        {
+          "type": "aggregate",
+          "fields": ["d"],
+          "ops": ["mean"],
+          "groupby": ["x", "y", "class"],
+          "as": ["d"]
+        }
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "hscale",
+      "type": "band",
+      "domain": {"signal": "sequence(0,max(rows,columns)+1,1)"},
+      "range": [0, {"signal": "sizeref*scale"}]
+    },
+    {
+      "name": "light",
+      "type": "pow",
+      "exponent": 2,
+      "domain": {"data": "umatrix", "field": "d"},
+      "range": [1, 0]
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "domain": {"data": "umatrix", "field": "class", "sort": true},
+      "range": ["#555", "red", "yellow", "blue"]
+    }
+  ],
+  "marks": [
+    {
+      "type": "symbol",
+      "from": {"data": "umatrix"},
+      "encode": {
+        "enter": {
+          "shape": {"value": "m0,-1 l1,.5 v1 l-1,.5 l-1,-.5 v-1 l1,-.5"},
+          "fill": {"value": "steelblue"}
+        },
+        "update": {
+          "tooltip": {"signal": "[datum.x,datum.y]"},
+          "size": {"signal": "pow(sizeSymbol,2)"},
+          "xc": {
+            "field": "x",
+            "scale": "hscale",
+            "offset": {
+              "signal": "(datum.y%2==1 ? 0 : sizeSymbol/2) + (width - sizeSymbol*columns)/2 + sizeSymbol/4"
+            }
+          },
+          "fill": [
+            {"test": "showclasses", "field": "class", "scale": "color"},
+            {
+              "signal": "hcl(hcl_white.h,hcl_white.c, scale('light', datum.d)*100)"
+            }
+          ],
+          "yc": {
+            "field": "y",
+            "scale": "hscale",
+            "offset": {
+              "signal": "(datum.y > 0 ? -datum.y*sizeSymbol/4 : 0) +(height - (sizeSymbol*rows - (rows-1)*sizeSymbol/4))/2 + sizeSymbol/2"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
