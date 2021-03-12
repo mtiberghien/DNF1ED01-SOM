@@ -40,7 +40,7 @@ int main()
         somScoreResult* result = getscore(data, weights, config);
         displayConfig(config);
         displayScore(result, config);
-        write(weights, config);
+        write(weights, config, result);
         clear_mem(weights, result, config);
         resetConfig(config);
     }

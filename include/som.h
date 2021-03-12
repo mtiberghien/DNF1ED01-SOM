@@ -38,7 +38,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
 //Append the current state of SOM neurons (one line by neuron) using provided step id and score
 void writeAppend(long stepid, somNeuron *weights, somConfig* config, somScoreResult* scoreResult);
 //Write the neurons as csv
-void write(somNeuron* weights, somConfig* config);
+void write(somNeuron* weights, somConfig* config, somScoreResult* scoreResult);
 somScoreResult* getscore(dataVector* data, void* weights, somConfig *config);
 //Clear som objects (weighs and score)
 void clear_mem(void* weights,  somScoreResult* score,somConfig *config);

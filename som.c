@@ -871,7 +871,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
 #ifdef TRACE_SOM
     long stepId = 0;
     long time = 0;
-    write(weights, config);
+    write(weights, config, NULL);
 #endif
     while(again)
     {
@@ -1399,12 +1399,12 @@ void writeAppend(long stepid, somNeuron *weights, somConfig* config, somScoreRes
 }
 
 //Write a screenshot of SOM neurons
-void write(somNeuron* weights, somConfig* config){
+void write(somNeuron* weights, somConfig* config, somScoreResult* scoreResult){
     FILE * fp;
     fp = fopen(getsomFileName(config), "w");
     if(fp != NULL)
     {
-        wirteNeurons(fp, weights, config, -1, NULL);
+        wirteNeurons(fp, weights, config, scoreResult ? 0 : -1, scoreResult);
     }
     fclose(fp);
 }
