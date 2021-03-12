@@ -14,14 +14,6 @@ typedef struct somNeuron{
     int r;
     //column index (used in all dimensions)
     int c;
-    //1 if the neuron is considered as stabilized, 0 otherwise
-    short isStabilized;
-    //Stores the sum of updates made to a neuron during one episode
-    double* updates;
-    //Stores the indexes of entries that activated the neuron during one episode
-    int* entries;
-    //Stores the number of entries that activated the neuron during one episode
-    int ec;
 } somNeuron;
 
 // Defines a data vector
@@ -48,20 +40,22 @@ typedef enum mapDimension{
     threeD = 3
 } mapDimension;
 
+typedef enum initialDistribution{
+    usingMeans = 0,
+    usingMinMax = 1
+} initialDistribution;
+
 //SOM settings
 typedef struct somConfig{
+
     //Number of entries -> Should be initialized when reading data
     int n;
     //Number of parameters -> Should be initialized when reading data
     int p;
     //Learning factor (0 to 1)-> 0.99 by default
     double alpha;
-    //Each episode (all data processed once) alpha will be multiplied by this value (should be between 0 and 1) -> default 0.99
-    double alphaDecreaseRate;
     //Neighborhood factor (0 to 1)-> 0.99 by default
     double sigma;
-    //Each episode (all data processed once) sigma will be multiplied by this value (should be between 0 and 1) -> default 0.99
-    double sigmaDecreaseRate;
     //Number of weights -> if not provided will be calculated as 5*sqrt(n)
     int nw;
     //Map dimension (1, 2, or 3) -> 2 by default
@@ -75,21 +69,19 @@ typedef struct somConfig{
     //Neighborhood radius (the algorithm will look for ((2*radius)+1)^dimensions neighboors (winner included)
     // -> calculated if not provided
     int radius;
-    //Each n episodes (each data processed once) of learning the radius will decrease -> 3 by default (every 3 episode radius will decrease)
-    int radiusDecreaseRate;
+    //percentage of epochs when radius decrease (if epochs = 1000 and radiusDecrease rate =0.3, radius will decrease every 333 epochs)
+    double radiusDecreaseRate;
     //A neuron will be considered as stable if the update absolute delta fore each parameter is smaller than the value -> 0.001 by default
     double stabilizationTrigger;
     //The neighborhood initial percentage coverage (0 to 1) -> 0.6 by default
     double initialPercentCoverage;
-    // The neurons should stabilize automatically (speed related to data volume and changeTrigger). This parameter force the end of learning after n episodes.
-    // value <0 means no limit -> 1000 by default
-    int maxEpisodes;
     // 1 if input data should be normalized, 0 otherwise -> 1 by default
     short normalize;
-    // 1 if want to use neighbour method (faster but might split some classes if to early) to find the winner
-    short useNeighboursMethod;
-    // Number of episodes to wait after starting to use neighbours method
-    int useNeighboursTrigger;
+    // Percent of epochs to start using neighbours method 1 means that will never be triggered 0 means that it will be triggered after first epoch
+    double useNeighboursTriggerRate;
+    //Number of epochs (one epoch = learn with one input vector)
+    int epochs;
+    initialDistribution distribution;
 } somConfig;
 
 // Define a value area
