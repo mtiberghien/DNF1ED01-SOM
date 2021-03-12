@@ -239,7 +239,12 @@
       "orient": "right",
       "fill": "color",
       "labelColor": "#eee",
-      "titleColor": "#eee"
+      "titleColor": "#eee",
+      "encode": {
+        "labels": {"update": {"opacity": {"signal": "showClasses ? 1 :0"}}},
+        "symbols": {"update": {"opacity": {"signal": "showClasses ? 1 :0"}}},
+        "title": {"update": {"opacity": {"signal": "showClasses ? 1 :0"}}}
+      }
     }
   ],
   "scales": [
@@ -250,11 +255,9 @@
       "range": [0, {"signal": "sizeref*scale"}]
     },
     {
-      "name": "light",
-      "type": "pow",
-      "exponent": 2,
+      "name": "g-color",
       "domain": {"data": "umatrix", "field": "d"},
-      "range": [1, 0]
+      "range": {"scheme": "greys"}
     },
     {
       "name": "color",
@@ -289,7 +292,7 @@
       "encode": {
         "enter": {
           "shape": {"value": "m0,-1 l1,.5 v1 l-1,.5 l-1,-.5 v-1 l1,-.5"},
-          "fill": {"value": "steelblue"}
+          "stroke": {"value": "#777"}
         },
         "update": {
           "size": {"signal": "pow(sizeSymbol,2)"},
@@ -307,9 +310,7 @@
               "signal": "datum.secondary > -1 ? datum.secondary : datum.class",
               "scale": "color"
             },
-            {
-              "signal": "hcl(hcl_white.h,hcl_white.c, scale('light', datum.d)*100)"
-            }
+            {"field": "d", "scale": "g-color"}
           ],
           "yc": {
             "field": "y",
@@ -334,7 +335,7 @@
             "signal": "{'class':datum.class,'score':datum.score,'score max':datum.score1, 'score 2':datum.score2,'coords':[datum.x,datum.y]}"
           },
           "size": {
-            "signal": "pow(sizeSymbol * (datum.score1/(datum.score || 1)||1),2)"
+            "signal": "pow(0.95*sizeSymbol * (datum.score1/(datum.score || 1)||1),2)"
           },
           "xc": {
             "field": "x",
@@ -343,12 +344,7 @@
               "signal": "(datum.y%2==1 ? 0 : sizeSymbol/2) + (width - sizeSymbol*columns)/2 + sizeSymbol/4"
             }
           },
-          "fill": [
-            {"test": "showClasses", "field": "class", "scale": "color"},
-            {
-              "signal": "hcl(hcl_white.h,hcl_white.c, scale('light', datum.d)*100)"
-            }
-          ],
+          "fill": [{"test": "showClasses", "field": "class", "scale": "color"}],
           "yc": {
             "field": "y",
             "scale": "hscale",
