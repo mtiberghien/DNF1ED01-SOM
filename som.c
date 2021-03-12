@@ -8,7 +8,7 @@
 //som1D.data will store history for 1D map
 //som2D.data will store history for 2D map
 //som3D.data will store history for 3D map
-#define TRACE_SOM 1
+//#define TRACE_SOM 1
 
 #pragma region Config Section
 somConfig* getsomDefaultConfig(){
@@ -755,7 +755,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
         findwnfp(&data[i], weights, config);
         vectorsToPropose[i]=i;
     }
-    int episode = 0;
+
     int radiusRate = config->epochs*config->radiusDecreaseRate;
     int neighboursTrigger = config->epochs*config->useNeighboursTriggerRate;
     int epoch = 0;
@@ -784,7 +784,6 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
             epoch++;
 
         }
-        episode++;
         cfg.alpha = config->alpha*exp(-(double)epoch/cfg.epochs);
         cfg.sigma = max(1.0E-10, config->sigma*exp(-(double)epoch/cfg.epochs));   
         if(cfg.radius >1 && (!radiusRate || epoch%radiusRate == 0))
