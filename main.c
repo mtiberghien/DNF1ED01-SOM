@@ -3,6 +3,7 @@
 #include <math.h>
 #include "include/irisdata.h"
 #include "include/parkinsondata.h"
+#include "include/mnistdata.h"
 #include "include/som.h"
 #include "include/common.h"
 
@@ -10,52 +11,40 @@ int main()
 {
     void* weights;
     somConfig *config = getsomDefaultConfig();
-    dataVector *data = getParkinsonsData(config);
+    dataVector *data_raw = getMNISTData(config);
+    dataVector data[500];
+
+    for(int i =0;i<500;i++)
+    {
+        int index = rand()%config->n;
+        data[i]=data_raw[index];
+    }
+    config->n=500;
     dataBoundary boundaries[config->p];
     calculateBoundaries(data, boundaries, config);
-    int maxClasses = 0;
-    int activatedNodes = 0;
-     for(double alpha=0.1;alpha<=1;alpha+=0.1)
-    {
-        for(double alphaRate=0.1;alphaRate<=1;alphaRate+=0.1)
-        {
-            for(double sigma=0.1;sigma<=1;sigma+=0.1)
-            {
-                for(double sigmaRate=1;sigmaRate<=1;sigmaRate+=0.1)
-                {
-                    config->alpha = alpha;
-                    config->alphaDecreaseRate = alphaRate;
-                    config->sigma = sigma;
-                    config->sigmaDecreaseRate = sigmaRate;
-
-                    weights = getsom(data, config,boundaries, 1);
-                    somScoreResult* result = getscore(data, weights, config);
-                    if(result->nActivatedNodes >= maxClasses)
-                    {
-                        maxClasses = result->nActivatedNodes;
-                        printf("alpha: %.2f, alphaRate: %.2f, sigma: %.2f, sigmaRate: %.2f\n", alpha, alphaRate, sigma, sigmaRate);
-                        displayScore(result, config);
-                    }
-                    
-                    
-                    clear_mem(weights, result, config);
-                    resetConfig(config);
-                }
-            }
-        }
-    } 
-    /* for(int i=oneD;i<=threeD;i++)
+ 
+    for(int i=twoD;i<threeD;i++)
     {
         config->dimension = i;
+        config->stabilizationTrigger = 0.001;
+        config->alpha = 0.1;
+        config->alphaDecreaseRate=0.99;
+        config->sigma = 1;
+        config->sigmaDecreaseRate=0.9;
+        config->radiusDecreaseRate = 5;
+        config->initialPercentCoverage = 0.65;
+        config->maxEpisodes = 1000;
+        config->useNeighboursMethod = 1;
+        config->useNeighboursTrigger = 20;
          weights = getsom(data, config,boundaries, 0);
         somScoreResult* result = getscore(data, weights, config);
         displayConfig(config);
         displayScore(result, config);
-        
+        write(weights, config);
         clear_mem(weights, result, config);
         resetConfig(config);
-    } */
+    }
     
-    clear_data(data, config);
+    clear_data(data_raw, config);
     clear_config(config);    
 }

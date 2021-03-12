@@ -13,7 +13,7 @@
 #pragma region Config Section
 somConfig* getsomDefaultConfig(){
     somConfig* config = malloc(sizeof(somConfig));
-    config->normalize=0;
+    config->normalize=1;
     config->stabilizationTrigger = 0.001;
     config->dimension = twoD;
     config->alpha = 0.72;
