@@ -8,9 +8,11 @@ typedef struct somScore
     int totalEntries;
     //winner class (class with most entries)
     int maxClass;
+    int maxClasstotalEntries;
     //second class with most entries (used to detect ambiguous classification)
     int secondClass;
     //-1 means no class related, 0 one and one class only related, 1 more thant one class related
+    int secondClasstotalEntries;
     short status;
     //number of entries for each classes
     int* scores;

@@ -17,19 +17,19 @@ somConfig* getsomDefaultConfig(){
 #ifdef TRACE_SOM
     config->normalize = 0;
 #else
-    config->normalize = 1;
+    config->normalize = 0;
 #endif
     config->stabilizationTrigger = 0.001;
     config->dimension = twoD;
-    config->alpha = 0.85;
-    config->alphaDecreaseRate=0.99;
-    config->sigma = 0.99;
-    config->sigmaDecreaseRate=0.92;
+    config->alpha = 0.72;
+    config->alphaDecreaseRate=0.72;
+    config->sigma = 1;
+    config->sigmaDecreaseRate=0.8;
     config->radiusDecreaseRate = 5;
     config->initialPercentCoverage = 0.6;
     config->maxEpisodes = 1000;
     config->useNeighboursMethod = 1;
-    config->useNeighboursTrigger = 2;
+    config->useNeighboursTrigger = 5;
 }
 
 //Reset blocks, rows, columns, node and and radius variable so they can be calculated automatically
@@ -317,22 +317,24 @@ somNeuron* getNearest(dataVector* v, void* weights, somConfig* config)
 void find_winner_fromNeighbours(dataVector* v, void * weights, somConfig* config)
 {
     somNeuron* nearest = getNearest(v, weights, config);
-    while(nearest!=v->lastWinner)
+    if(nearest)
     {
-        v->lastWinner = nearest;
-        nearest = getNearest(v, weights, config);
+        while(nearest!=v->lastWinner)
+        {
+            v->lastWinner = nearest;
+            nearest = getNearest(v, weights, config);
+        }
     }
 }
 //Add a neigbour to a node
-int addNeighbour(somNeuron* n, somNeuron* nb, int count)
+void addNeighbour(somNeuron* n, somNeuron* nb)
 {
     if(!nb->isStabilized)
     {
-        n->neighbours = (somNeuron**)realloc(n->neighbours, (count+1)*sizeof(somNeuron*));
-        n->neighbours[count]= nb;
-        count++;
-    }
-    return count;    
+        n->neighbours[n->nc]= nb;
+        n->nc ++;
+        n->neighbours = (somNeuron**)realloc(n->neighbours, (n->nc+1)*sizeof(somNeuron*));
+    }   
 }
 //Initialize the neighbours of a neuron (including itself) for a 1D SOM
 void getNeighbours1D(somNeuron* n, void* weights, somConfig* config)
@@ -340,14 +342,12 @@ void getNeighbours1D(somNeuron* n, void* weights, somConfig* config)
     somNeuron* som = (somNeuron*)weights;
     int start = max(0, n->c - config->radius);
     int end = min(config->map_c, n->c + config->radius);
-    int in=0;
     n->neighbours = (somNeuron**)malloc(sizeof(somNeuron*));
     for(int i=start;i<end;i++)
     {
         somNeuron* nb = &som[i];
-        in = addNeighbour(n, nb, in);
+        addNeighbour(n, nb);
     }
-    n->nc=in;
 }
 //Initialize the neighbours of a neuron (including itself) for a 2D SOM
 void getNeighbours2D(somNeuron* n, void* weights, somConfig* config)
@@ -359,17 +359,15 @@ void getNeighbours2D(somNeuron* n, void* weights, somConfig* config)
     int end_c = min(config->map_c, n->c + config->radius);
     int rc = (end_r - start_r);
     int cc = (end_c - start_c);
-    int in=0;
     n->neighbours = (somNeuron**)malloc(sizeof(somNeuron*));
     for(int i=start_r;i<end_r;i++)
     {
         for(int j=start_c;j<end_c;j++)
         {
             somNeuron* nb = &som[i][j];
-            in = addNeighbour(n, nb, in);
+            addNeighbour(n, nb);
         }
     }
-    n->nc = in;
 }
 //Initialize the neighbours of a neuron (including itself) for a 3D SOM
 void getNeighbours3D(somNeuron* n, void* weights, somConfig* config)
@@ -384,7 +382,6 @@ void getNeighbours3D(somNeuron* n, void* weights, somConfig* config)
     int rc = end_r - start_r;
     int cc = end_c - start_c;
     int bc = end_b - start_b;
-    int in=0;
     n->neighbours = (somNeuron**)malloc(sizeof(somNeuron*));
     for(int i=start_b;i<end_b;i++)
     {
@@ -393,12 +390,11 @@ void getNeighbours3D(somNeuron* n, void* weights, somConfig* config)
             for(int k=start_c;k<end_c;k++)
             {
                 somNeuron* nb = &som[i][j][k];
-                in = addNeighbour(n, nb, in);
+                addNeighbour(n, nb);
             }
 
         }
     }
-    n->nc = in;
 }
 
 #pragma endregion
@@ -545,7 +541,8 @@ void updateNeurons3D(dataVector* v, somNeuron  ***weights, somConfig* config)
 //Trace the list of entries matching with a neuron during one episode
 void updateWinner(somNeuron* winner, int vectorIndex)
 {
-    winner->entries[winner->ec++]=vectorIndex;
+    winner->entries[winner->ec]=vectorIndex;
+    winner->ec = winner->ec +1;
     winner->entries=realloc(winner->entries, (winner->ec+1)*sizeof(int));
 }
 
@@ -630,10 +627,7 @@ void clear_mem1D(void* weights, void* score, somConfig* config)
     for(int i = 0; i < config->map_c; i++)
     {
         free(som[i].v);
-        if(som[i].neighbours)
-        {
-            free(som[i].neighbours);
-        }
+        free(som[i].neighbours);
         free(som[i].updates);
         free(som[i].entries);
         if(sc)
@@ -761,14 +755,17 @@ int updateStabilized1D(void* weights, somConfig* config, int* stabilizedVectors)
         if(!n->isStabilized)
         {
             n->isStabilized = getIsStabilized(n->updates, config);
-            free(n->updates);
-            n->updates = (double*)calloc(config->p, sizeof(double));
             if(n->isStabilized)
             {
                 nNewStabilized++;
                 updateStabilizedVectors(stabilizedVectors, config, n);
             }
         }
+        n->ec = 0;
+        free(n->entries);
+        n->entries = (int*)malloc(sizeof(int));
+        free(n->updates);
+        n->updates = (double*)calloc(config->p, sizeof(double));
     }
     return nNewStabilized;
 }
@@ -883,6 +880,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
 #endif
     while(again)
     {
+
         for(int i=cfg.n-1;i>=0;i--)
         {
             int ivector = ((double)rand()/RAND_MAX)*i;
@@ -905,7 +903,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
             vectorsToPropose[i]=stabilizedVectors[i];
         }
         cfg.alpha*= cfg.alphaDecreaseRate;
-        cfg.sigma*= cfg.sigmaDecreaseRate;
+        cfg.sigma = max(1.0E-10, cfg.sigma*cfg.sigmaDecreaseRate);
         short flagUpdated = 0;
         if(episode>0 && episode%cfg.radiusDecreaseRate == 0){  
             if(cfg.radius > 1)
@@ -1002,6 +1000,8 @@ void initScore(somScore* s, int nClasses)
     s->scores = malloc(sizeof(int)*nClasses);
     s->entries = malloc(sizeof(int));
     s->totalEntries = 0;
+    s->maxClasstotalEntries = 0;
+    s->secondClasstotalEntries = 0;
     for(int i=0;i<nClasses;i++)
     {
         s->scores[i]=0;
@@ -1025,9 +1025,11 @@ void updateScoreStats(somScore* s, int nClasses, somScoreResult* scoreResult)
     {
         scoreResult->nActivatedNodes++;
         s->maxClass = argMax(s->scores, nClasses, -1);
+        s->maxClasstotalEntries = s->scores[s->maxClass];
         if(s->status >0)
         {
             s->secondClass = argMax(s->scores, nClasses, s->maxClass);
+            s->secondClasstotalEntries = s->scores[s->secondClass];
         }
         
     }
@@ -1291,13 +1293,17 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p)
     int z = n->b;
     int s = -1;
     int class = -1;
+    int classtotalEntries = -1;
     int class2 = -1;
+    int class2totalEntries = -1;
     short stabilized = n->isStabilized;
     if(score)
     {
         s = score->totalEntries;
+        classtotalEntries = score->maxClasstotalEntries;
         class = score->maxClass;
         class2 = score->secondClass;
+        class2totalEntries = score->secondClasstotalEntries;
     }
     for(int i=0;i<p;i++){
         fprintf(fp, "%f", n->v[i]);
@@ -1306,7 +1312,7 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p)
             fputs(",", fp);
         }
     }
-    fprintf(fp, "];%d;%d;%d;%ld;%d;%d;%d;%d", x,y,z , stepId, s, class,  class2, stabilized);
+    fprintf(fp, "];%d;%d;%d;%ld;%d;%d;%d;%d;%d;%d", x,y,z , stepId, s, class,  class2, stabilized, classtotalEntries, class2totalEntries);
     fputs(";[", fp);
     int limit = s-1;
     for(int i=0;i<s;i++)

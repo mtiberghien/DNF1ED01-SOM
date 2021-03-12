@@ -1,8 +1,7 @@
 {
   "$schema": "https://vega.github.io/schema/vega/v5.json",
-  "width": 500,
+  "width": 400,
   "height": 300,
-  "autosize": "none",
   "background": "black",
   "signals": [
     {
@@ -27,7 +26,13 @@
     {"name": "sizeref", "init": "min(width,height)"},
     {"name": "sizeSymbol", "update": "bandwidth('hscale')"},
     {"name": "hcl_white", "init": "hcl('white')"},
-    {"name": "showclasses", "value": false, "bind": {"input": "checkbox"}}
+    {
+      "name": "visualization",
+      "value": "umatrix",
+      "bind": {"input": "select", "options": ["iso", "umatrix", "classes"]}
+    },
+    {"name": "showClasses", "update": "visualization === 'classes'"},
+    {"name": "showIso", "update": "visualization === 'iso'"}
   ],
   "data": [
     {
@@ -81,7 +86,7 @@
       "name": "umatrix",
       "source": "neurons",
       "transform": [
-        {"type": "project", "fields": ["x", "y", "vector", "class"]},
+        {"type": "project", "fields": ["x", "y", "vector"]},
         {
           "type": "formula",
           "expr": "sequence(datum.x-1,datum.x+2,1)",
@@ -117,7 +122,7 @@
           "type": "aggregate",
           "fields": ["d"],
           "ops": ["sum"],
-          "groupby": ["x", "y", "nx", "ny", "class"],
+          "groupby": ["x", "y", "nx", "ny"],
           "as": ["d"]
         },
         {"type": "formula", "expr": "sqrt(datum.d)", "as": "d"},
@@ -125,8 +130,104 @@
           "type": "aggregate",
           "fields": ["d"],
           "ops": ["mean"],
-          "groupby": ["x", "y", "class"],
+          "groupby": ["x", "y"],
           "as": ["d"]
+        },
+        {"type": "formula", "expr": "datum.x+'.'+datum.y", "as": "id"},
+        {
+          "type": "lookup",
+          "from": "neurons",
+          "key": "id",
+          "fields": ["id"],
+          "values": ["class", "secondary", "score"]
+        }
+      ]
+    },
+    {
+      "name": "contours",
+      "values": [
+        {
+          "width": 10,
+          "height": 6,
+          "values": [
+            0.2578511240756423,
+            0.3058441839731901,
+            0.2487052883545705,
+            0.2685179910444436,
+            0.3389578394167332,
+            0.30633449892016573,
+            0.38205706744253554,
+            0.29584810471034745,
+            0.26605582426172286,
+            0.23693853204428267,
+            0.2780676908296241,
+            0.3107959385246578,
+            0.3329607178419947,
+            0.26630493916841125,
+            0.3185027152606442,
+            0.4363650913266983,
+            0.281801985768974,
+            0.311048339212583,
+            0.35884262724669014,
+            0.3662417162564426,
+            0.2991050486428282,
+            0.21227891465063944,
+            0.31304016407080915,
+            0.3333648476937067,
+            0.31541228510279984,
+            0.36617209955226987,
+            0.3282796670167401,
+            0.38083854992020016,
+            0.27374474481762795,
+            0.1619191655557998,
+            0.34146409766040525,
+            0.23900828744878808,
+            0.24984442538313564,
+            0.3880230168969736,
+            0.26394954129613296,
+            0.2910124455811639,
+            0.30211141887705417,
+            0.40445887222362786,
+            0.2986141768727288,
+            0.22487951187932595,
+            0.4821118316054024,
+            0.2676114845350854,
+            0.26126167283090435,
+            0.23583010212455405,
+            0.3433951952908287,
+            0.2873444250315608,
+            0.3893850724137036,
+            0.34603563164554996,
+            0.36718846915014836,
+            0.30280629799531106,
+            0.34064687271223687,
+            0.4091734246364384,
+            0.348085436622626,
+            0.2715311581398921,
+            0.2660433961940478,
+            0.2891984993972841,
+            0.2819201094032573,
+            0.3466181720775759,
+            0.32845476422326325,
+            0.4856715404442277
+          ]
+        }
+      ],
+      "transform": [
+        {"type": "formula", "expr": "columns", "as": "width"},
+        {"type": "formula", "expr": "rows", "as": "height"},
+        {
+          "type": "formula",
+          "expr": "pluck(data('umatrix'),'d')",
+          "as": "values"
+        },
+        {
+          "type": "isocontour",
+          "scale": {"expr": "sizeref*scale/datum.width"},
+          "translate": [
+            {"signal": "(width - (sizeref*scale))/2"},
+            {"signal": "(height - (sizeref*scale*rows/columns))/2"}
+          ]
         }
       ]
     }
@@ -150,6 +251,12 @@
       "type": "ordinal",
       "domain": {"data": "umatrix", "field": "class", "sort": true},
       "range": ["#555", "red", "yellow", "blue"]
+    },
+    {
+      "name": "iso-color",
+      "type": "linear",
+      "domain": {"data": "umatrix", "field": "d"},
+      "range": {"scheme": "blueorange"}
     }
   ],
   "marks": [
@@ -162,8 +269,8 @@
           "fill": {"value": "steelblue"}
         },
         "update": {
-          "tooltip": {"signal": "[datum.x,datum.y]"},
           "size": {"signal": "pow(sizeSymbol,2)"},
+          "opacity": {"signal": "showIso ? 0 : 1"},
           "xc": {
             "field": "x",
             "scale": "hscale",
@@ -172,7 +279,11 @@
             }
           },
           "fill": [
-            {"test": "showclasses", "field": "class", "scale": "color"},
+            {
+              "test": "showClasses",
+              "signal": "datum.secondary > -1 ? datum.secondary : datum.class",
+              "scale": "color"
+            },
             {
               "signal": "hcl(hcl_white.h,hcl_white.c, scale('light', datum.d)*100)"
             }
@@ -186,6 +297,56 @@
           }
         }
       }
+    },
+    {
+      "type": "symbol",
+      "from": {"data": "umatrix"},
+      "encode": {
+        "enter": {
+          "shape": {"value": "m0,-1 l1,.5 v1 l-1,.5 l-1,-.5 v-1 l1,-.5"},
+          "fill": {"value": "steelblue"}
+        },
+        "update": {
+          "opacity": {"signal": "showIso || !showClasses ? 0 :1"},
+          "tooltip": {
+            "signal": "{'score':datum.score,'coords':[datum.x,datum.y]}"
+          },
+          "size": {"signal": "pow(sizeSymbol,2)", "mult": 0.5},
+          "xc": {
+            "field": "x",
+            "scale": "hscale",
+            "offset": {
+              "signal": "(datum.y%2==1 ? 0 : sizeSymbol/2) + (width - sizeSymbol*columns)/2 + sizeSymbol/4"
+            }
+          },
+          "fill": [
+            {"test": "showClasses", "field": "class", "scale": "color"},
+            {
+              "signal": "hcl(hcl_white.h,hcl_white.c, scale('light', datum.d)*100)"
+            }
+          ],
+          "yc": {
+            "field": "y",
+            "scale": "hscale",
+            "offset": {
+              "signal": "(datum.y > 0 ? -datum.y*sizeSymbol/4 : 0) +(height - (sizeSymbol*rows - (rows-1)*sizeSymbol/4))/2 + sizeSymbol/2"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "path",
+      "from": {"data": "contours"},
+      "encode": {
+        "enter": {
+          "stroke": {"value": "#ccc"},
+          "strokeWidth": {"value": 1},
+          "fill": {"scale": "iso-color", "field": "contour.value"}
+        },
+        "update": {"opacity": {"signal": "showIso ? 1 :0"}}
+      },
+      "transform": [{"type": "geopath", "field": "datum.contour"}]
     }
   ]
 }
