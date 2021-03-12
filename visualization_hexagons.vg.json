@@ -7,7 +7,7 @@
     {
       "name": "current_step",
       "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 2171, "step": 1}
+      "bind": {"input": "range", "min": -1, "max": 1690, "step": 1}
     },
     {"name": "rows", "init": "y_extent[1]+1"},
     {"name": "columns", "init": "x_extent[1]+1"},
@@ -32,7 +32,8 @@
       "bind": {"input": "select", "options": ["iso", "umatrix", "classes"]}
     },
     {"name": "showClasses", "update": "visualization === 'classes'"},
-    {"name": "showIso", "update": "visualization === 'iso'"}
+    {"name": "showIso", "update": "visualization === 'iso'"},
+    {"name": "hivewidth", "update": "sizeSymbol*columns"}
   ],
   "data": [
     {
@@ -48,7 +49,9 @@
           "score": "number",
           "secondary": "number",
           "class": "number",
-          "stabilized": "number"
+          "stabilized": "number",
+          "score1": "number",
+          "score2": "number"
         },
         "header": [
           "vector",
@@ -60,6 +63,8 @@
           "class",
           "secondary",
           "stabilized",
+          "score1",
+          "score2",
           "entries"
         ]
       },
@@ -69,6 +74,7 @@
         {"type": "filter", "expr": "datum.step === current_step"},
         {"type": "extent", "field": "y", "signal": "y_extent"},
         {"type": "extent", "field": "x", "signal": "x_extent"},
+        {"type": "extent", "field": "score", "signal": "scores"},
         {
           "type": "formula",
           "expr": "split(replace(replace(datum.vector, '[',''),']',''),',')",
@@ -139,7 +145,7 @@
           "from": "neurons",
           "key": "id",
           "fields": ["id"],
-          "values": ["class", "secondary", "score"]
+          "values": ["class", "secondary", "score", "score1", "score2"]
         }
       ]
     },
@@ -150,66 +156,66 @@
           "width": 10,
           "height": 6,
           "values": [
-            0.2578511240756423,
-            0.3058441839731901,
-            0.2487052883545705,
-            0.2685179910444436,
-            0.3389578394167332,
-            0.30633449892016573,
-            0.38205706744253554,
-            0.29584810471034745,
-            0.26605582426172286,
-            0.23693853204428267,
-            0.2780676908296241,
-            0.3107959385246578,
-            0.3329607178419947,
-            0.26630493916841125,
-            0.3185027152606442,
-            0.4363650913266983,
-            0.281801985768974,
-            0.311048339212583,
-            0.35884262724669014,
-            0.3662417162564426,
-            0.2991050486428282,
-            0.21227891465063944,
-            0.31304016407080915,
-            0.3333648476937067,
-            0.31541228510279984,
-            0.36617209955226987,
-            0.3282796670167401,
-            0.38083854992020016,
-            0.27374474481762795,
-            0.1619191655557998,
-            0.34146409766040525,
-            0.23900828744878808,
-            0.24984442538313564,
-            0.3880230168969736,
-            0.26394954129613296,
-            0.2910124455811639,
-            0.30211141887705417,
-            0.40445887222362786,
-            0.2986141768727288,
-            0.22487951187932595,
-            0.4821118316054024,
-            0.2676114845350854,
-            0.26126167283090435,
-            0.23583010212455405,
-            0.3433951952908287,
-            0.2873444250315608,
-            0.3893850724137036,
-            0.34603563164554996,
-            0.36718846915014836,
-            0.30280629799531106,
-            0.34064687271223687,
-            0.4091734246364384,
-            0.348085436622626,
-            0.2715311581398921,
-            0.2660433961940478,
-            0.2891984993972841,
-            0.2819201094032573,
-            0.3466181720775759,
-            0.32845476422326325,
-            0.4856715404442277
+            0.1880212199452168,
+            0.24333470412316394,
+            0.2886564716286609,
+            0.2505858475773026,
+            0.25910818517381845,
+            0.35775356409451875,
+            0.29970327250384304,
+            0.3188422987165109,
+            0.3905135682669356,
+            0.5758821289243886,
+            0.3192231957732337,
+            0.3288627058653789,
+            0.2855003207715698,
+            0.26100900699783963,
+            0.24224165193449101,
+            0.33896149236392936,
+            0.3018407324826444,
+            0.2715610184231788,
+            0.3501414940257599,
+            0.30626448018043734,
+            0.4288245126067427,
+            0.276779004546938,
+            0.3016620640630127,
+            0.2843286384058817,
+            0.29278371890267607,
+            0.3703014551254017,
+            0.31541384495936375,
+            0.2855025823591412,
+            0.2709447555123156,
+            0.2584284129362279,
+            0.26288754794808267,
+            0.314273337403383,
+            0.15572406683555778,
+            0.21010551108632067,
+            0.3362024318329401,
+            0.34352274366020047,
+            0.34826557037678485,
+            0.2689051862483423,
+            0.26576578684379665,
+            0.30040505629232866,
+            0.24484606568143977,
+            0.24403448053516424,
+            0.32089490324215486,
+            0.2969853287163936,
+            0.2775094708388013,
+            0.2767377907113204,
+            0.25914984410327085,
+            0.2700272201722008,
+            0.22315767800927339,
+            0.2737032490560792,
+            0.24000252284434975,
+            0.33685308411429465,
+            0.3367711780153249,
+            0.389096858725259,
+            0.33642056066276815,
+            0.2793255055439181,
+            0.29593875059062746,
+            0.2853016660587634,
+            0.20995514589393177,
+            0.201882121287182
           ]
         }
       ],
@@ -223,10 +229,10 @@
         },
         {
           "type": "isocontour",
-          "scale": {"expr": "sizeref*scale/datum.width"},
+          "scale": {"expr": "hivewidth/datum.width"},
           "translate": [
-            {"signal": "(width - (sizeref*scale))/2"},
-            {"signal": "(height - (sizeref*scale*rows/columns))/2"}
+            {"signal": "(width - hivewidth)/2"},
+            {"signal": "(height - (hivewidth*rows/columns))/2"}
           ]
         }
       ]
@@ -261,6 +267,19 @@
   ],
   "marks": [
     {
+      "type": "path",
+      "from": {"data": "contours"},
+      "encode": {
+        "enter": {
+          "stroke": {"value": "#ccc"},
+          "strokeWidth": {"value": 1},
+          "fill": {"scale": "iso-color", "field": "contour.value"}
+        },
+        "update": {"opacity": {"signal": "showIso ? 1 :0"}}
+      },
+      "transform": [{"type": "geopath", "field": "datum.contour"}]
+    },
+    {
       "type": "symbol",
       "from": {"data": "umatrix"},
       "encode": {
@@ -270,7 +289,7 @@
         },
         "update": {
           "size": {"signal": "pow(sizeSymbol,2)"},
-          "opacity": {"signal": "showIso ? 0 : 1"},
+          "opacity": {"signal": "showIso ? 0.2 : 1"},
           "xc": {
             "field": "x",
             "scale": "hscale",
@@ -303,15 +322,16 @@
       "from": {"data": "umatrix"},
       "encode": {
         "enter": {
-          "shape": {"value": "m0,-1 l1,.5 v1 l-1,.5 l-1,-.5 v-1 l1,-.5"},
-          "fill": {"value": "steelblue"}
+          "shape": {"value": "m0,-1 l1,.5 v1 l-1,.5 l-1,-.5 v-1 l1,-.5"}
         },
         "update": {
           "opacity": {"signal": "showIso || !showClasses ? 0 :1"},
           "tooltip": {
-            "signal": "{'score':datum.score,'coords':[datum.x,datum.y]}"
+            "signal": "{'class':datum.class,'score':datum.score,'score max':datum.score1, 'score 2':datum.score2,'coords':[datum.x,datum.y]}"
           },
-          "size": {"signal": "pow(sizeSymbol,2)", "mult": 0.5},
+          "size": {
+            "signal": "pow(sizeSymbol * (datum.score1/(datum.score || 1)||1),2)"
+          },
           "xc": {
             "field": "x",
             "scale": "hscale",
@@ -334,19 +354,6 @@
           }
         }
       }
-    },
-    {
-      "type": "path",
-      "from": {"data": "contours"},
-      "encode": {
-        "enter": {
-          "stroke": {"value": "#ccc"},
-          "strokeWidth": {"value": 1},
-          "fill": {"scale": "iso-color", "field": "contour.value"}
-        },
-        "update": {"opacity": {"signal": "showIso ? 1 :0"}}
-      },
-      "transform": [{"type": "geopath", "field": "datum.contour"}]
     }
   ]
 }

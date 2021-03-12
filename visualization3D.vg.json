@@ -19,7 +19,7 @@
     {
       "name": "current_step",
       "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 1434, "step": 1},
+      "bind": {"input": "range", "min": -1, "max": 1713, "step": 1},
       "on": [
         {
           "events": "timer{100}",
@@ -165,7 +165,9 @@
           "score": "number",
           "secondary": "number",
           "class": "number",
-          "stabilized": "number"
+          "stabilized": "number",
+          "score1": "number",
+          "score2": "number"
         },
         "header": [
           "vector",
@@ -177,6 +179,8 @@
           "class",
           "secondary",
           "stabilized",
+          "score1",
+          "score2",
           "entries"
         ]
       },
@@ -382,7 +386,9 @@
         "enter": {"stroke": {"field": "secondary", "scale": "color"}},
         "update": {
           "opacity": {"signal": "datum.stabilized ? 0.5:1"},
-          "tooltip": {"signal": "'['+datum.x+','+datum.y+','+datum.z+']'"},
+          "tooltip": {
+            "signal": "{'score max':datum.score1, 'score 2': datum.score2,'coords':'['+datum.x+','+datum.y+','+datum.z+']'}"
+          },
           "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
           "size": [
             {
@@ -408,12 +414,7 @@
           "align": {"value": "right"}
         },
         "update": {
-          "xc": {
-            "field": "xc",
-            "offset": {
-              "signal": "-sqrt(scale('score', datum.datum.score)) - 5*scale"
-            }
-          },
+          "xc": {"field": "bounds.x1", "offset": {"signal": "-min(4,3*scale)"}},
           "yc": {"field": "yc"},
           "opacity": {"signal": "datum.datum.id === selectedNeuron.id ? 1 :0"}
         }

@@ -7,7 +7,7 @@
     {
       "name": "current_step",
       "value": -1,
-      "bind": {"input": "range", "min": -1, "max": 2171, "step": 1},
+      "bind": {"input": "range", "min": -1, "max": 1690, "step": 1},
       "on": [
         {
           "events": "timer{100}",
@@ -76,7 +76,7 @@
         "header": ["sl", "sw", "pl", "pw", "class"],
         "delimiter": ","
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/iris.data?token=ASL2ZNJMDB3DV54GHZGUJ63AJIKOM"
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/iris.data?token=ASL2ZNOGTZAUZICCRCTQLJ3AKRZX6"
     },
     {
       "name": "neurons",
@@ -89,6 +89,8 @@
           "z-grid": "number",
           "step": "number",
           "score": "number",
+          "score1": "number",
+          "score2": "number",
           "secondary": "number",
           "class": "number",
           "stabilized": "number"
@@ -103,6 +105,8 @@
           "class",
           "secondary",
           "stabilized",
+          "score1",
+          "score2",
           "entries"
         ]
       },
@@ -390,11 +394,11 @@
       "name": "neuron",
       "from": {"data": "neurons"},
       "encode": {
-        "enter": {
-          "stroke": {"field": "secondary", "scale": "color"},
-          "tooltip": {"signal": "'['+datum['x-grid']+','+datum['y-grid']+']'"}
-        },
+        "enter": {"stroke": {"field": "secondary", "scale": "color"}},
         "update": {
+          "tooltip": {
+            "signal": "{'score max':datum.score1, 'score 2':datum.score2,'coords':'['+datum['x-grid']+','+datum['y-grid']+']'}"
+          },
           "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
           "opacity": [
             {
@@ -438,11 +442,8 @@
         },
         "update": {
           "xc": {
-            "field": "xc",
-            "offset": {
-              "signal": "-sqrt(scale('score', datum.datum.score))",
-              "mult": {"signal": "showmap ? 2*scale*neuronscale:scale"}
-            }
+            "signal": "datum.bounds.x1",
+            "offset": {"signal": "-min(4, 3*scale)"}
           },
           "yc": {"field": "yc"},
           "opacity": {"signal": "datum.datum.id === selectedNeuron.id ? 1 :0"}

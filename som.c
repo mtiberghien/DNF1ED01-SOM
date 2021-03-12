@@ -8,17 +8,12 @@
 //som1D.data will store history for 1D map
 //som2D.data will store history for 2D map
 //som3D.data will store history for 3D map
-#define TRACE_SOM 1
+//#define TRACE_SOM 1
 
 #pragma region Config Section
 somConfig* getsomDefaultConfig(){
     somConfig* config = malloc(sizeof(somConfig));
-    
-#ifdef TRACE_SOM
-    config->normalize = 0;
-#else
-    config->normalize = 0;
-#endif
+    config->normalize=0;
     config->stabilizationTrigger = 0.001;
     config->dimension = twoD;
     config->alpha = 0.72;
@@ -1035,7 +1030,7 @@ void updateScoreStats(somScore* s, int nClasses, somScoreResult* scoreResult)
     }
 }
 //Retrieve scores for 1D SOM neurons
-void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult)
+void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult, void (*findwnfp)(dataVector*,void*,somConfig*))
 {
     somScore* score = (somScore*)malloc(sizeof(somScore) * config->map_c);
     somNeuron* som = (somNeuron*)weights;
@@ -1048,7 +1043,7 @@ void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     for(int i=0;i<config->n;i++)
     {
         dataVector* v = &data[i];
-        find_winner_fromNeighbours(v,weights,config);
+        findwnfp(v,weights,config);
         somNeuron* winner = v->lastWinner;
         updateScore(&score[winner->c],v->class, i);
 
@@ -1060,7 +1055,7 @@ void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     scoreResult->scores = score;
 }
 //Retrieve scores for 2D SOM neurons
-void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult)
+void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult, void (*findwnfp)(dataVector*,void*,somConfig*))
 {
     somScore** score = (somScore**)malloc(sizeof(somScore*) * config->map_r);
     somNeuron** som = (somNeuron**)weights;
@@ -1077,7 +1072,7 @@ void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     for(int i=0;i<config->n;i++)
     {
         dataVector* v = &data[i];
-        find_winner_fromNeighbours(v,weights,config);
+        findwnfp(v,weights,config);
         somNeuron* winner = v->lastWinner;
         updateScore(&score[winner->r][winner->c],v->class, i);
     }
@@ -1092,7 +1087,7 @@ void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     scoreResult->scores = score;
 }
 //Retrieve scores for 3D SOM neurons
-void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult)
+void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult, void (*findwnfp)(dataVector*,void*,somConfig*))
 {
     somScore*** score = (somScore***)malloc(sizeof(somScore**) * config->map_b);
     somNeuron*** som = (somNeuron***)weights;
@@ -1113,7 +1108,7 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     for(int i=0;i<config->n;i++)
     {
         dataVector* v = &data[i];
-        find_winner_fromNeighbours(v,weights,config);
+        findwnfp(v,weights,config);
         somNeuron* winner = v->lastWinner;
         updateScore(&score[winner->b][winner->r][winner->c],v->class, i);
     }
@@ -1136,15 +1131,26 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
 somScoreResult* getscore(dataVector* data, void* weights, somConfig* config)
 {
     somScoreResult* result = malloc(sizeof(somScoreResult));
-    void (*scorefp)(dataVector*,  void* , somConfig*, somScoreResult*);
+    void (*scorefp)(dataVector*,  void* , somConfig*, somScoreResult*, void (*)(dataVector*,void*,somConfig*));
+    void (*findwnfp)(dataVector*,void*,somConfig*);
     switch (config->dimension)
     {
-        case oneD: scorefp = score1D; break;
-        case threeD: scorefp = score3D; break;
-        default: scorefp = score2D; break;
+        case oneD: scorefp = score1D;
+            findwnfp = findWinner1D;
+         break;
+        case threeD: scorefp = score3D;
+            findwnfp = findWinner2D;
+         break;
+        default: scorefp = score2D;
+            findwnfp = findWinner3D;
+         break;
+    }
+    if(config->useNeighboursMethod)
+    {
+        findwnfp = find_winner_fromNeighbours;
     }
     result->nClasses = getClassesCount(data, config->n);
-    scorefp(data, weights, config, result);
+    scorefp(data, weights, config, result, findwnfp);
     return result;
 }
 #pragma endregion
@@ -1370,13 +1376,13 @@ void wirteNeurons(FILE *fp, void *weights, somConfig* config, long stepid, somSc
 }
 
 //Get a different file name according to each dimension (visualization purpose)
-char* getsomFileName(mapDimension dimension)
+char* getsomFileName(somConfig* config)
 {
-    switch (dimension)
+    switch(config->dimension)
     {
-        case oneD: return "som1D.data";
-        case twoD: return "som2D.data";
-        case threeD: return "som3D.data";
+        case oneD: return config->normalize ? "som1D_n.data":"som1D.data";
+        case threeD: return config->normalize ? "som3D_n.data":"som3D.data";
+        default: return config->normalize ? "som2D_n.data":"som2D.data";
     }
 }
 
@@ -1384,7 +1390,7 @@ char* getsomFileName(mapDimension dimension)
 void writeAppend(long stepid, somNeuron *weights, somConfig* config, somScoreResult* scoreResult)
 {
     FILE * fp;
-    fp = fopen(getsomFileName(config->dimension), "a");
+    fp = fopen(getsomFileName(config), "a");
     if(fp != NULL)
     {
         wirteNeurons(fp, weights, config, stepid, scoreResult);
@@ -1395,7 +1401,7 @@ void writeAppend(long stepid, somNeuron *weights, somConfig* config, somScoreRes
 //Write a screenshot of SOM neurons
 void write(somNeuron* weights, somConfig* config){
     FILE * fp;
-    fp = fopen(getsomFileName(config->dimension), "w");
+    fp = fopen(getsomFileName(config), "w");
     if(fp != NULL)
     {
         wirteNeurons(fp, weights, config, -1, NULL);
