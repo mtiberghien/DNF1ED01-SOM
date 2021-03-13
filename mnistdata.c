@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "include/common.h"
 
-dataVector* getMNISTData(somConfig *config)
+dataVector* getMNISTData(somConfig *config, int limit)
 {
      FILE * fp;
     char * line = NULL;
@@ -46,6 +46,10 @@ dataVector* getMNISTData(somConfig *config)
             ln++;
             if(ptr){
                 free(ptr);
+            }
+            if(limit==ln)
+            {
+                break;
             }
         }
     }
