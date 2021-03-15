@@ -11,6 +11,7 @@ int main()
 {
     void* weights;
     somConfig *config = getsomDefaultConfig();
+    config->normalize=0;
     dataVector *data = getIrisData(config);
     /* dataVector data[500];
     int proposed[config->n];
@@ -31,7 +32,6 @@ int main()
         dataBoundary boundaries[config->p];
         calculateBoundaries(data, boundaries, config);
         int activatedNodes = 0;
-        config->normalize=0;
         config->alpha = 0.1;
         config->dimension=i;
         weights = getsom(data, config,boundaries, 0);
