@@ -11,8 +11,8 @@ int main()
 {
     void* weights;
     somConfig *config = getsomDefaultConfig();
-    dataVector *data_raw = getMNISTData(config, 10000);
-    dataVector data[500];
+    dataVector *data = getIrisData(config);
+    /* dataVector data[500];
     int proposed[config->n];
     for (int i = 0; i < config->n; i++)
     {
@@ -25,28 +25,25 @@ int main()
         data[i]= data_raw[proposed[index]];
         proposed[index]=--n;
     }
-    config->n=500;                                                      
-    
-    dataBoundary boundaries[config->p];
-    calculateBoundaries(data, boundaries, config);
-    int maxClasses = 0;
-    int activatedNodes = 0;
-
-    for(int i=twoD;i<=twoD;i++)
+    config->n=500;        */                                               
+    for (size_t i = oneD; i <= threeD; i++)
     {
-        config->dimension = i;
-        config->useNeighboursTriggerRate = 0.1;
-        config->map_r=40;
-        config->map_c=40;
-         weights = getsom(data, config,boundaries, 0);
+        dataBoundary boundaries[config->p];
+        calculateBoundaries(data, boundaries, config);
+        int activatedNodes = 0;
+        config->normalize=0;
+        config->alpha = 0.1;
+        config->dimension=i;
+        weights = getsom(data, config,boundaries, 0);
         somScoreResult* result = getscore(data, weights, config);
         displayConfig(config);
-        displayScore(result, config);
-        write(weights, config, result);    
+        displayScore(result, config);  
+        
         clear_mem(weights, result, config);
-        resetConfig(config);
+        resetConfig(config); 
     }
-    config->n=1000;
-    clear_data(data_raw, config);
+        
+    //config->n=10000;
+    clear_data(data, config);
     clear_config(config);    
 }

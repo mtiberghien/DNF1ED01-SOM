@@ -8,7 +8,7 @@
 //som1D.data will store history for 1D map
 //som2D.data will store history for 2D map
 //som3D.data will store history for 3D map
-//#define TRACE_SOM 1
+#define TRACE_SOM 1
 
 #pragma region Config Section
 somConfig* getsomDefaultConfig(){
@@ -16,11 +16,9 @@ somConfig* getsomDefaultConfig(){
     config->normalize=1;
     config->stabilizationTrigger = 0.001;
     config->dimension = twoD;
-    config->alpha = 0.95;
-    config->sigma = 1;
-    config->radiusDecreaseRate = 0.7;
+    config->alpha = 0.01;
     config->initialPercentCoverage = 0.6;
-    config->useNeighboursTriggerRate = 0.4;
+    config->useNeighboursTriggerRate = 0.3;
     config->distribution = usingMeans;
 }
 
@@ -331,9 +329,9 @@ void getNeighbours1D(somNeuron* n, void* weights, somConfig* config)
 {
     somNeuron* som = (somNeuron*)weights;
     int start = max(0, n->c - config->radius);
-    int end = min(config->map_c, n->c + config->radius);
+    int end = min(config->map_c - 1, n->c + config->radius);
     n->neighbours = (somNeuron**)malloc(sizeof(somNeuron*));
-    for(int i=start;i<end;i++)
+    for(int i=start;i<=end;i++)
     {
         somNeuron* nb = &som[i];
         addNeighbour(n, nb);
@@ -344,15 +342,15 @@ void getNeighbours2D(somNeuron* n, void* weights, somConfig* config)
 {
     somNeuron** som = (somNeuron**)weights;
     int start_r = max(0, n->r - config->radius);
-    int end_r = min(config->map_r, n->r + config->radius);
+    int end_r = min(config->map_r -1, n->r + config->radius);
     int start_c = max(0, n->c - config->radius);
-    int end_c = min(config->map_c, n->c + config->radius);
+    int end_c = min(config->map_c -1, n->c + config->radius);
     int rc = (end_r - start_r);
     int cc = (end_c - start_c);
     n->neighbours = (somNeuron**)malloc(sizeof(somNeuron*));
-    for(int i=start_r;i<end_r;i++)
+    for(int i=start_r;i<=end_r;i++)
     {
-        for(int j=start_c;j<end_c;j++)
+        for(int j=start_c;j<=end_c;j++)
         {
             somNeuron* nb = &som[i][j];
             addNeighbour(n, nb);
@@ -364,20 +362,20 @@ void getNeighbours3D(somNeuron* n, void* weights, somConfig* config)
 {
     somNeuron*** som = (somNeuron***)weights;
     int start_r = max(0, n->r - config->radius);
-    int end_r = min(config->map_r, n->r + config->radius);
+    int end_r = min(config->map_r - 1, n->r + config->radius);
     int start_c = max(0, n->c - config->radius);
-    int end_c = min(config->map_c, n->c + config->radius);
+    int end_c = min(config->map_c - 1, n->c + config->radius);
     int start_b = max(0, n->b - config->radius);
-    int end_b = min(config->map_b, n->b + config->radius);
+    int end_b = min(config->map_b - 1, n->b + config->radius);
     int rc = end_r - start_r;
     int cc = end_c - start_c;
     int bc = end_b - start_b;
     n->neighbours = (somNeuron**)malloc(sizeof(somNeuron*));
-    for(int i=start_b;i<end_b;i++)
+    for(int i=start_b;i<=end_b;i++)
     {
-        for(int j=start_r;j<end_r;j++)
+        for(int j=start_r;j<=end_r;j++)
         {
-            for(int k=start_c;k<end_c;k++)
+            for(int k=start_c;k<=end_c;k++)
             {
                 somNeuron* nb = &som[i][j][k];
                 addNeighbour(n, nb);
@@ -390,13 +388,17 @@ void getNeighbours3D(somNeuron* n, void* weights, somConfig* config)
 #pragma endregion
 
 #pragma region Update Section
+double gaussian_function(double distance, double sigma)
+{
+    return exp(-distance/2*(sigma*sigma));
+}
 
 //Return a value between 0 and 1 according to the 1D distance between the winner neuron and another neuron and a neighborhood factor using neurons coordinates
 double neighborhood_function1d(somNeuron* winner, somNeuron* n, double sigma)
 {
     double wp[1]={winner->c};
     double np[1]={n->c};
-    return exp(-(distance_function(wp, np, 1)/(sigma * sigma)));
+    return gaussian_function(distance_function(wp,np,1), sigma);
 }
 
 //Return a value between 0 and 1 according to the 2D distance between the winner neuron and another neuron and a neighborhood factor using using neurons coordinates
@@ -404,7 +406,7 @@ double neighborhood_function2d(somNeuron* winner, somNeuron* n, double sigma)
 {
     double wp[2]={winner->c, winner->r};
     double np[2]={n->c, n->r};
-    return exp(-(distance_function(wp, np, 2)/(sigma * sigma)));
+    return gaussian_function(distance_function(wp,np,2), sigma);
 }
 
 //Return a value between 0 and 1 according to the 3D distance between the winner neuron and another neuron and a neighborhood factor using using neurons coordinates
@@ -412,7 +414,7 @@ double neighborhood_function3d(somNeuron* winner, somNeuron* n, double sigma)
 {
     double wp[3]={winner->c, winner->r, winner->b};
     double np[3]={n->c, n->r, n->b};
-    return exp(-(distance_function(wp, np, 3)/(sigma * sigma)));
+    return gaussian_function(distance_function(wp,np,3), sigma);
 }
 
 //Return absolute value
@@ -676,6 +678,33 @@ void clear_mem(void* weights, somScoreResult* score, somConfig* config)
 }
 
 #pragma endregion
+double getDistance1D(int i)
+{
+    double n1[]={0};
+    double n2[]={i};
+    return distance_function(n1, n2, 1);
+}
+
+double getDistance2D(int i)
+{
+    double n1[]={0,0};
+    double n2[]={i,i};
+    return distance_function(n1, n2, 2);
+}
+
+double getDistance3D(int i)
+{
+    double n1[]={0,0,0};
+    double n2[]={i,i,i};
+    return distance_function(n1, n2, 3);
+}
+double getInitialSigma(somConfig* config, double(*getdistfp)(int))
+{
+    double dist = getdistfp(1);
+    double sigma = sqrt(-dist/2*log(0.5));
+    return sigma;
+}
+
 //Get stabilized som neurons that has been train using provided data and config
 //The method initialize first the fonctions to use according to the configured dimension
 //The it evaluates the size of SOM map and initialize it
@@ -707,6 +736,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
     void (*learnfp)(int, dataVector*, void*, somConfig*, void (*)(dataVector*,void*,somConfig*));
     void (*updatenbfp)(void*, somConfig*);
     void (*findwnfp)(dataVector*, void*, somConfig*);
+    double (*getdistfp)(int);
 #ifdef TRACE_SOM
     void (*clearscorefp)(void*, somConfig*);
 #endif
@@ -716,6 +746,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
          learnfp = learn1D;
          updatenbfp = update_neighbours1D;
          findwnfp = findWinner1D;
+         getdistfp = getDistance1D;
 #ifdef TRACE_SOM
          clearscorefp = clear_score1D;
 #endif
@@ -725,6 +756,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
          learnfp = learn3D;
          updatenbfp = update_neighbours3D;
          findwnfp = findWinner3D;
+         getdistfp = getDistance3D;
 #ifdef TRACE_SOM
          clearscorefp = clear_score3D;
 #endif
@@ -735,11 +767,13 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
          learnfp = learn2D;
          updatenbfp = update_neighbours2D;
          findwnfp = findWinner2D;
+         getdistfp = getDistance2D;
 #ifdef TRACE_SOM
          clearscorefp = clear_score2D;
 #endif
     }
     void* weights = initfp(data, config, boundaries, getrandomfp);
+    config->sigma = getInitialSigma(config, getdistfp);
     if(config->nw == 0)
     {
         if(!silent)
@@ -750,13 +784,13 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
     }
     updatenbfp(weights, config);
     somConfig cfg = *config;
+    double tau = cfg.epochs/log(cfg.sigma);
     int vectorsToPropose[cfg.n];
     for(int i=0;i<cfg.n;i++){
         findwnfp(&data[i], weights, config);
         vectorsToPropose[i]=i;
     }
 
-    int radiusRate = config->epochs*config->radiusDecreaseRate;
     int neighboursTrigger = config->epochs*config->useNeighboursTriggerRate;
     int epoch = 0;
 #ifdef TRACE_SOM
@@ -785,12 +819,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
 
         }
         cfg.alpha = config->alpha*exp(-(double)epoch/cfg.epochs);
-        cfg.sigma = max(1.0E-10, config->sigma*exp(-(double)epoch/cfg.epochs));   
-        if(cfg.radius >1 && (!radiusRate || epoch%radiusRate == 0))
-        {  
-            cfg.radius--;
-            updatenbfp(weights, &cfg);       
-        }
+        cfg.sigma = max(1.0E-10, config->sigma*exp(-(double)epoch/tau));
         if(epoch == neighboursTrigger)
         {
             findwnfp = find_winner_fromNeighbours;
@@ -1085,7 +1114,7 @@ void displayConfig(somConfig* config)
 {
     printf("SOM Settings:\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %.2f\n%21s: %.2f\n%s: %.f%%\n", "Entries", config->n,
                         "Parameters", config->p, "Dimension", config->dimension, "Neurons", config->nw , "Radius", config->radius,
-                        "Learning rate", config->alpha, "Neighborhood factor", config->sigma,
+                        "Learning rate", config->alpha, "Use neighbours trigger", config->useNeighboursTriggerRate,
                         "Neighborhood coverage", config->initialPercentCoverage *100);
     if(config->dimension == threeD)
     {

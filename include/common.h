@@ -69,8 +69,6 @@ typedef struct somConfig{
     //Neighborhood radius (the algorithm will look for ((2*radius)+1)^dimensions neighboors (winner included)
     // -> calculated if not provided
     int radius;
-    //percentage of epochs when radius decrease (if epochs = 1000 and radiusDecrease rate =0.3, radius will decrease every 333 epochs)
-    double radiusDecreaseRate;
     //A neuron will be considered as stable if the update absolute delta fore each parameter is smaller than the value -> 0.001 by default
     double stabilizationTrigger;
     //The neighborhood initial percentage coverage (0 to 1) -> 0.6 by default
