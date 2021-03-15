@@ -11,7 +11,7 @@ int main()
 {
     void* weights;
     somConfig *config = getsomDefaultConfig();
-    config->normalize=0;
+    config->normalize=1;
     dataVector *data = getIrisData(config);
     dataBoundary boundaries[config->p];
     calculateBoundaries(data, boundaries, config);

@@ -24,7 +24,7 @@
     {"name": "showmap", "value": false, "bind": {"input": "checkbox"}},
     {"name": "showrealdata", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showneurons", "value": true, "bind": {"input": "checkbox"}},
-    {"name": "showlinks", "value": false, "bind": {"input": "checkbox"}},
+    {"name": "showlinks", "value": true, "bind": {"input": "checkbox"}},
     {
       "name": "scale",
       "value": 0.8,
@@ -110,7 +110,7 @@
           "entries"
         ]
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNOLITE24TLC6B5LJ5TAKG36G",
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNMAPKD75AG3XHXTRNLALB3XS",
       "transform": [
         {"type": "extent", "signal": "steps", "field": "step"},
         {"type": "extent", "signal": "scores", "field": "score"},

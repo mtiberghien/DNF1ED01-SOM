@@ -184,7 +184,7 @@
           "entries"
         ]
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som3D.data?token=ASL2ZNLJUSIBWKMQXHYHXFDAJY32S",
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som3D.data?token=ASL2ZNIIIIPLNYTKDHAK37TALC774",
       "transform": [
         {"type": "extent", "signal": "steps", "field": "step"},
         {"type": "extent", "signal": "scores", "field": "score"},
