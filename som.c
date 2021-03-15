@@ -1,5 +1,6 @@
 #include "include/som.h"
 #include "include/common.h"
+#include <string.h>
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,7 +19,7 @@ somConfig* getsomDefaultConfig(){
     config->dimension = twoD;
     config->alpha = 0.01;
     config->initialPercentCoverage = 0.6;
-    config->useNeighboursTriggerRate = 0;
+    config->useNeighboursTriggerRate = 0.1;
     config->distribution = usingMeans;
     config->nbFactorRadius1 = 0.5;
 }
@@ -121,7 +122,7 @@ void set2DMapSize(somConfig *config)
     {
         //Arbitrary 4/3 ratio (16/9 didn't exist in the eighties ;))
         double ratio = 4.0/3;
-        int y = floor(sqrt(config->nw / ratio));
+        int y = ceil(sqrt(config->nw / ratio));
         y-=config->nw%y;
         int x = config->nw/y;
         config->map_r=y;
@@ -835,12 +836,12 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
 #endif
     while(epoch<cfg.epochs)
     {
+        if(epoch >= neighboursTrigger)
+        {
+            findwnfp = find_winner_fromNeighbours;
+        }
         for(int i=cfg.n-1;i>=0;i--)
         {
-            if(epoch == neighboursTrigger)
-            {
-                findwnfp = find_winner_fromNeighbours;
-            }
             if(!silent)
             {
                 printf("%6.2f%%\033[7D", (double)epoch*100/cfg.epochs);
@@ -1102,26 +1103,23 @@ somScoreResult* getscore(dataVector* data, void* weights, somConfig* config)
 
 #pragma region  Display Section
 int getTerminalColorCode(int index){
-    if(index>0)
+    if(index>=0)
     {
-        int code = index%7;
-        if(code>0)
+        int code = index%6;
+        switch(code)
         {
-            switch(code)
-            {
-                //red
-                case 1: return 31;
-                //yellow
-                case 2: return 33;
-                //blue
-                case 3: return 34;
-                //green
-                case 4: return 32;
-                //magenta
-                case 5: return 35;
-                //cyan
-                case 6: return 36;
-            }
+            //red
+            case 0: return 31;
+            //yellow
+            case 1: return 33;
+            //blue
+            case 2: return 34;
+            //green
+            case 3: return 32;
+            //magenta
+            case 4: return 35;
+            //cyan
+            case 5: return 36;
         }
     }
     //default
@@ -1129,26 +1127,23 @@ int getTerminalColorCode(int index){
 }
 
 int getTerminalBGColorCode(int index){
-    if(index>0)
+    if(index>=0)
     {
-        int code = index%7;
-        if(code>0)
+        int code = index%6;
+        switch(code)
         {
-            switch(code)
-            {
-                //red
-                case 1: return 41;
-                //yellow
-                case 2: return 43;
-                //blue
-                case 3: return 44;
-                //green
-                case 4: return 42;
-                //magenta
-                case 5: return 45;
-                //cyan
-                case 6: return 46;
-            }
+            //red
+            case 0: return 41;
+            //yellow
+            case 1: return 43;
+            //blue
+            case 2: return 44;
+            //green
+            case 3: return 42;
+            //magenta
+            case 4: return 45;
+            //cyan
+            case 5: return 46;
         }
     }
     //default
@@ -1176,14 +1171,14 @@ void displayConfig(somConfig* config)
 void displayScoreAtom(somScore* score)
 {
     somScore s =*score;
-    int c = s.maxClass + 1;
+    int c = s.maxClass;
     if(s.status<1)
     {
         printf("\033[0;%dm", getTerminalColorCode(c));
     }
     else
     {
-        printf("\033[0;%d;%dm", getTerminalColorCode(c), getTerminalBGColorCode(s.secondClass+1));
+        printf("\033[0;%d;%dm", getTerminalColorCode(c), getTerminalBGColorCode(s.secondClass));
     }
 
     printf("%d", c);
@@ -1310,7 +1305,7 @@ void writeNeurons3D(FILE* fp, void* weights, void* scores, long stepId, somConfi
 }
 
 //Serializes neurons for a specific stepid and a specific socre result
-void wirteNeurons(FILE *fp, void *weights, somConfig* config, long stepid, somScoreResult* scoreResult)
+void writeNeurons(FILE *fp, void *weights, somConfig* config, long stepid, somScoreResult* scoreResult)
 {
     void (*writefp)(FILE*,void*, void*, long, somConfig*);
     switch(config->dimension){
@@ -1319,6 +1314,59 @@ void wirteNeurons(FILE *fp, void *weights, somConfig* config, long stepid, somSc
         default: writefp = writeNeurons2D;break;
     }
     writefp(fp, weights, scoreResult ? scoreResult->scores : NULL, stepid,config);
+}
+
+void saveNeuron(FILE* fp, somNeuron* n, int p)
+{
+    fprintf(fp, "%d;%d;%d;", n->b,n->r,n->c);
+    for(int i=0;i<p;i++){
+        fprintf(fp, "%f", n->v[i]);
+        if(i<p-1)
+        {
+            fputs(";", fp);
+        }
+    }
+    fputs("]\n", fp);
+}
+
+//Serializes 1D SOM neurons
+void saveNeurons1D(FILE* fp, void* weights, somConfig* config)
+{
+    somNeuron* som = (somNeuron*)weights;
+    for(int i=0;i<config->map_c;i++)
+    {
+        saveNeuron(fp, &som[i], config->p);
+    }
+}
+//Serializes 2D SOM neurons
+void saveNeurons2D(FILE* fp, void* weights, somConfig* config)
+{
+    somNeuron** som = (somNeuron**)weights;
+    for(int i=0;i<config->map_r;i++)
+    {
+        saveNeurons1D(fp, som[i], config);
+    }  
+}
+//Serializes 3D SOM neurons
+void saveNeurons3D(FILE* fp, void* weights, somConfig* config)
+{
+    somNeuron*** som = (somNeuron***)weights;
+    for(int i=0;i<config->map_b;i++)
+    {
+        saveNeurons2D(fp, som[i], config);
+    }      
+}
+
+//Serializes neurons for a specific stepid and a specific socre result
+void saveNeurons(FILE *fp, void *weights, somConfig* config)
+{
+    void (*writefp)(FILE*,void*, somConfig*);
+    switch(config->dimension){
+        case oneD: writefp = saveNeurons1D;break;
+        case threeD: writefp = saveNeurons3D;break;
+        default: writefp = saveNeurons2D;break;
+    }
+    writefp(fp, weights,config);
 }
 
 //Get a different file name according to each dimension (visualization purpose)
@@ -1333,27 +1381,102 @@ char* getsomFileName(somConfig* config)
 }
 
 //Append a specific step screenshot of SOM neurons
-void writeSomAppend(long stepid, somNeuron *weights, somConfig* config, somScoreResult* scoreResult)
+void writeSomAppend(long stepid, void *weights, somConfig* config, somScoreResult* scoreResult)
 {
     FILE * fp;
     fp = fopen(getsomFileName(config), "a");
     if(fp != NULL)
     {
-        wirteNeurons(fp, weights, config, stepid, scoreResult);
+        writeNeurons(fp, weights, config, stepid, scoreResult);
     }
     fclose(fp);
 }
 
 //Write a screenshot of SOM neurons
-void writeSom(somNeuron* weights, somConfig* config, somScoreResult* scoreResult){
+void writeSom(void* weights, somConfig* config, somScoreResult* scoreResult){
     FILE * fp;
     fp = fopen(getsomFileName(config), "w");
     if(fp != NULL)
     {
-        wirteNeurons(fp, weights, config, scoreResult ? 0 : -1, scoreResult);
+        writeNeurons(fp, weights, config, scoreResult ? 0 : -1, scoreResult);
     }
     fclose(fp);
 }
+
+void writeConfig(FILE *fp, somConfig* config)
+{
+    fprintf(fp, "%d;%d;%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%d;%d\n", config->n, config->p, config->nw, config->dimension, config->map_b, config->map_r,config->map_c,
+                                    config->radius, config->alpha, config->sigma, config->stabilizationTrigger, config->initialPercentCoverage,
+                                    config->useNeighboursTriggerRate, config->nbFactorRadius1, config->normalize, config->epochs);
+}
+
+void readConfig(char* line, somConfig* config)
+{
+    char delim[]=";";
+    char *ptr = strtok(line, delim);
+    int column=0;
+    while(ptr != NULL && column < 16)
+    {
+        switch(column)
+        {
+            case 0: config->n = atoi(ptr); break;
+            case 1: config->p = atoi(ptr);break;
+            case 2: config->nw = atoi(ptr);break;
+            case 3: config->dimension = (mapDimension)atoi(ptr);break;
+            case 4: config->map_b = atoi(ptr);break;
+            case 5: config->map_r = atoi(ptr);break;
+            case 6: config->map_c = atoi(ptr);break;
+            case 7: config->radius = atoi(ptr);break;
+            case 8: config->alpha = atof(ptr);break;
+            case 9: config->sigma = atof(ptr);break;
+            case 10: config->stabilizationTrigger = atof(ptr);break;
+            case 11: config->initialPercentCoverage = atof(ptr);break;
+            case 12: config->useNeighboursTriggerRate = atof(ptr);break;
+            case 13: config->nbFactorRadius1 = atof(ptr);break;
+            case 14: config->normalize = (short)atoi(ptr);break;
+            case 15: config->epochs = atoi(ptr);break;
+        }
+        ptr = strtok(NULL, delim);
+        column++;
+    }
+}
+
+void saveSom(void* weights, somConfig* config, char* filename)
+{
+    FILE * fp;
+    fp = fopen(filename, "w");
+    if(fp != NULL)
+    {
+        writeConfig(fp, config);
+        saveNeurons(fp, weights, config);
+    }
+    fclose(fp);
+}
+
+void loadSom(char* filename)
+{
+    FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    somConfig* config = (somConfig*)malloc(sizeof(somConfig));
+    fp = fopen(filename, "r");
+    if (fp == NULL)
+        exit(EXIT_FAILURE);
+    int ln = 0;
+    read = getline(&line, &len, fp);
+    if(read>1)
+    {
+        readConfig(line, config);
+    }
+    while ((read = getline(&line, &len, fp)) != -1) {
+        //TODO Read neurons
+    }
+
+    fclose(fp);
+}
+
+
 #pragma endregion
 
 

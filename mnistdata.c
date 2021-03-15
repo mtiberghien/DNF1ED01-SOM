@@ -27,7 +27,6 @@ dataVector* getMNISTData(somConfig *config, int limit)
             data[ln].v = (double*)malloc(config->p * sizeof (double));
             while(ptr != NULL && column < config->p+1)
             {
-                //class index for status is 17
                 if(column > 0){
                     data[ln].v[i] = strtod(ptr, NULL);
                     i++;
