@@ -32,7 +32,7 @@ int main()
     for (size_t i = oneD; i <= threeD; i++)
     {
         int activatedNodes = 0;
-        config->alpha = 0.7;
+        config->alpha = 0.1;
         config->dimension=i;
         weights = getsom(data, config,boundaries, 0);
         somScoreResult* result = getscore(data, weights, config);

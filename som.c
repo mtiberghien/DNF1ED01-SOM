@@ -802,6 +802,8 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
 
         for(int i=cfg.n-1;i>=0;i--)
         {
+            cfg.alpha = config->alpha*exp(-(double)epoch/cfg.epochs);
+            cfg.sigma = max(1.0E-10, config->sigma*exp(-(double)epoch/tau));
             int ivector = ((double)rand()/RAND_MAX)*i;
             int proposed = vectorsToPropose[ivector];
             learnfp(proposed,  &data[proposed], weights, &cfg, findwnfp);
@@ -818,8 +820,6 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
             epoch++;
 
         }
-        cfg.alpha = config->alpha*exp(-(double)epoch/cfg.epochs);
-        cfg.sigma = max(1.0E-10, config->sigma*exp(-(double)epoch/tau));
         if(epoch == neighboursTrigger)
         {
             findwnfp = find_winner_fromNeighbours;
