@@ -29,11 +29,10 @@ int main()
         proposed[index]=--n;
     }
     config->n=500;        */                                               
-    for (size_t i = oneD; i <= threeD; i++)
+    for (int i = oneD; i <=threeD;i++)
     {
-        int activatedNodes = 0;
-        config->alpha = 0.1;
-        config->dimension=i;
+        config->dimension = i;
+        config->alpha = 0.2;
         weights = getsom(data, config,boundaries, 0);
         somScoreResult* result = getscore(data, weights, config);
         displayConfig(config);

@@ -80,6 +80,7 @@ typedef struct somConfig{
     //Number of epochs (one epoch = learn with one input vector)
     int epochs;
     initialDistribution distribution;
+    double nbFactorRadius1;
 } somConfig;
 
 // Define a value area

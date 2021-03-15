@@ -20,6 +20,7 @@ somConfig* getsomDefaultConfig(){
     config->initialPercentCoverage = 0.6;
     config->useNeighboursTriggerRate = 0.3;
     config->distribution = usingMeans;
+    config->nbFactorRadius1 = 0.5;
 }
 
 //Reset blocks, rows, columns, node and and radius variable so they can be calculated automatically
@@ -701,7 +702,7 @@ double getDistance3D(int i)
 double getInitialSigma(somConfig* config, double(*getdistfp)(int))
 {
     double dist = getdistfp(1);
-    double sigma = sqrt(-dist/2*log(0.5));
+    double sigma = sqrt(-dist/2*log(0.8));
     return sigma;
 }
 
@@ -793,6 +794,8 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
 
     int neighboursTrigger = config->epochs*config->useNeighboursTriggerRate;
     int epoch = 0;
+    int currentRadius = cfg.radius;
+    double tau2 = cfg.epochs/log(currentRadius);
 #ifdef TRACE_SOM
     long time = 0;
     write(weights, config, NULL);
@@ -803,7 +806,6 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
         for(int i=cfg.n-1;i>=0;i--)
         {
             cfg.alpha = config->alpha*exp(-(double)epoch/cfg.epochs);
-            cfg.sigma = max(1.0E-10, config->sigma*exp(-(double)epoch/tau));
             int ivector = ((double)rand()/RAND_MAX)*i;
             int proposed = vectorsToPropose[ivector];
             learnfp(proposed,  &data[proposed], weights, &cfg, findwnfp);
@@ -819,6 +821,12 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
 #endif  
             epoch++;
 
+        }
+        currentRadius = (int)(config->radius*exp(-epoch/tau2));
+        if(currentRadius<cfg.radius)
+        {
+            cfg.radius = currentRadius;
+            updatenbfp(weights, &cfg);
         }
         if(epoch == neighboursTrigger)
         {
@@ -1114,7 +1122,7 @@ void displayConfig(somConfig* config)
 {
     printf("SOM Settings:\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %.2f\n%21s: %.2f\n%s: %.f%%\n", "Entries", config->n,
                         "Parameters", config->p, "Dimension", config->dimension, "Neurons", config->nw , "Radius", config->radius,
-                        "Learning rate", config->alpha, "Use neighbours trigger", config->useNeighboursTriggerRate,
+                        "Learning rate", config->alpha, "Neighbours factor r1", config->nbFactorRadius1,
                         "Neighborhood coverage", config->initialPercentCoverage *100);
     if(config->dimension == threeD)
     {
