@@ -13,6 +13,8 @@ int main()
     somConfig *config = getsomDefaultConfig();
     config->normalize=0;
     dataVector *data = getIrisData(config);
+    dataBoundary boundaries[config->p];
+    calculateBoundaries(data, boundaries, config);
     /* dataVector data[500];
     int proposed[config->n];
     for (int i = 0; i < config->n; i++)
@@ -29,8 +31,6 @@ int main()
     config->n=500;        */                                               
     for (size_t i = oneD; i <= threeD; i++)
     {
-        dataBoundary boundaries[config->p];
-        calculateBoundaries(data, boundaries, config);
         int activatedNodes = 0;
         config->alpha = 0.1;
         config->dimension=i;
