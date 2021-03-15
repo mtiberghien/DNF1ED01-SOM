@@ -8,7 +8,7 @@
 //som1D.data will store history for 1D map
 //som2D.data will store history for 2D map
 //som3D.data will store history for 3D map
-#define TRACE_SOM 1
+//#define TRACE_SOM 1
 
 #pragma region Config Section
 somConfig* getsomDefaultConfig(){
@@ -18,7 +18,7 @@ somConfig* getsomDefaultConfig(){
     config->dimension = twoD;
     config->alpha = 0.01;
     config->initialPercentCoverage = 0.6;
-    config->useNeighboursTriggerRate = 0.3;
+    config->useNeighboursTriggerRate = 0;
     config->distribution = usingMeans;
     config->nbFactorRadius1 = 0.5;
 }
@@ -719,10 +719,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
         config->nw = floor(5 *sqrt(config->n *1.0));
         config->nw -= config->nw%12;
     }
-    if(!silent)
-    {
-        printf("Calculating  %dD SOM for %d entries and %d parameters :", config->dimension, config->n, config->p);
-    }
+
     if(!config->epochs)
     {
         config->epochs = config->n*10;
@@ -773,8 +770,17 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
          clearscorefp = clear_score2D;
 #endif
     }
+    if(!silent)
+    {
+        printf("Initializing SOM: ");
+        fflush(stdout);
+    }
     void* weights = initfp(data, config, boundaries, getrandomfp);
     config->sigma = getInitialSigma(config, getdistfp);
+    if(!silent)
+    {
+        printf("%7s\n", "Done");
+    }
     if(config->nw == 0)
     {
         if(!silent)
@@ -783,28 +789,63 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
         }
         return weights;
     }
+    if(!silent)
+    {
+        printf("Initializing SOM Neighbours: ");
+        fflush(stdout);
+    }
     updatenbfp(weights, config);
+    if(!silent)
+    {
+        printf("Done\n");
+    }
     somConfig cfg = *config;
     double tau = cfg.epochs/log(cfg.sigma);
     int vectorsToPropose[cfg.n];
+    if(!silent)
+    {
+        printf("Initializing SOM Last winners: ");
+        fflush(stdout);
+    }
     for(int i=0;i<cfg.n;i++){
+         if(!silent)
+        {
+            printf("%6.2f%%\033[7D", (double)i*100/cfg.n);
+            fflush(stdout);
+        }
         findwnfp(&data[i], weights, config);
         vectorsToPropose[i]=i;
     }
-
+    if(!silent)
+    {
+        printf("%7s\n", "Done");
+    }
+    if(!silent)
+    {
+        printf("Calculating  %dD SOM for %d entries and %d parameters :", config->dimension, config->n, config->p);
+        fflush(stdout);
+    }
     int neighboursTrigger = config->epochs*config->useNeighboursTriggerRate;
     int epoch = 0;
     int currentRadius = cfg.radius;
     double tau2 = cfg.epochs/log(currentRadius);
 #ifdef TRACE_SOM
     long time = 0;
-    write(weights, config, NULL);
+    writeSom(weights, config, NULL);
 #endif
     while(epoch<cfg.epochs)
     {
-
         for(int i=cfg.n-1;i>=0;i--)
         {
+            if(epoch == neighboursTrigger)
+            {
+                findwnfp = find_winner_fromNeighbours;
+            }
+            if(!silent)
+            {
+                printf("%6.2f%%\033[7D", (double)epoch*100/cfg.epochs);
+                fflush(stdout);
+            }
             cfg.alpha = config->alpha*exp(-(double)epoch/cfg.epochs);
             int ivector = ((double)rand()/RAND_MAX)*i;
             int proposed = vectorsToPropose[ivector];
@@ -814,7 +855,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
                 if(time++%TRACE_SOM == 0)
                 {
                     somScoreResult* result = getscore(data, weights, config);
-                    writeAppend(epoch, weights, config, result);
+                    writeSomAppend(epoch, weights, config, result);
                     clearscorefp(result->scores, config);
                     free(result);
                 }
@@ -828,21 +869,17 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
             cfg.radius = currentRadius;
             updatenbfp(weights, &cfg);
         }
-        if(epoch == neighboursTrigger)
-        {
-            findwnfp = find_winner_fromNeighbours;
-        }
     }
 #ifdef TRACE_SOM
     somScoreResult* result = getscore(data, weights, config);
-    writeAppend(epoch, weights, config, result);
+    writeSomAppend(epoch, weights, config, result);
     clearscorefp(result->scores, config);
     free(result);
 #endif
     if(!silent)
     {
         {
-            printf("Stopped after %d epochs\n", epoch);
+            printf("Done after %d epochs\n", epoch);
         }
     }
     
@@ -1296,7 +1333,7 @@ char* getsomFileName(somConfig* config)
 }
 
 //Append a specific step screenshot of SOM neurons
-void writeAppend(long stepid, somNeuron *weights, somConfig* config, somScoreResult* scoreResult)
+void writeSomAppend(long stepid, somNeuron *weights, somConfig* config, somScoreResult* scoreResult)
 {
     FILE * fp;
     fp = fopen(getsomFileName(config), "a");
@@ -1308,7 +1345,7 @@ void writeAppend(long stepid, somNeuron *weights, somConfig* config, somScoreRes
 }
 
 //Write a screenshot of SOM neurons
-void write(somNeuron* weights, somConfig* config, somScoreResult* scoreResult){
+void writeSom(somNeuron* weights, somConfig* config, somScoreResult* scoreResult){
     FILE * fp;
     fp = fopen(getsomFileName(config), "w");
     if(fp != NULL)
