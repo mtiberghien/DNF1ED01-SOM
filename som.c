@@ -24,6 +24,17 @@ somConfig* getsomDefaultConfig(){
     config->nbFactorRadius1 = 0.5;
 }
 
+//Get a different file name according to each dimension (visualization purpose)
+char* getsomFileName(somConfig* config)
+{
+    switch(config->dimension)
+    {
+        case oneD: return config->normalize ? "som1D_n.data":"som1D.data";
+        case threeD: return config->normalize ? "som3D_n.data":"som3D.data";
+        default: return config->normalize ? "som2D_n.data":"som2D.data";
+    }
+}
+
 //Reset blocks, rows, columns, node and and radius variable so they can be calculated automatically
 void resetConfig(somConfig* config)
 {
@@ -763,6 +774,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
     void (*updatenbfp)(void*, somConfig*);
     void (*findwnfp)(dataVector*, void*, somConfig*);
 #ifdef TRACE_SOM
+    char *filename = getsomFileName(config);
     void (*clearscorefp)(void*, somConfig*);
 #endif
     switch (config->dimension){
@@ -844,7 +856,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
     double tau2 = cfg.epochs/log(currentRadius);
 #ifdef TRACE_SOM
     long time = 0;
-    writeSomHisto(weights, config, NULL);
+    writeSomHisto(filename, weights, config, NULL);
 #endif
     while(epoch<cfg.epochs)
     {
@@ -868,7 +880,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
                 if(time++%TRACE_SOM == 0)
                 {
                     somScoreResult* result = getscore(data, weights, config, epoch>= neighboursTrigger);
-                    writeSomHistoAppend(epoch, weights, config, result);
+                    writeSomHistoAppend(filename, epoch, weights, config, result);
                     clearscorefp(result->scores, config);
                     free(result);
                 }
@@ -885,7 +897,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
     }
 #ifdef TRACE_SOM
     somScoreResult* result = getscore(data, weights, config,1);
-    writeSomHistoAppend(epoch, weights, config, result);
+    writeSomHistoAppend(filename, epoch, weights, config, result);
     clearscorefp(result->scores, config);
     free(result);
 #endif
@@ -1398,22 +1410,11 @@ void saveNeurons(FILE *fp, void *weights, somConfig* config)
     writefp(fp, weights,config);
 }
 
-//Get a different file name according to each dimension (visualization purpose)
-char* getsomFileName(somConfig* config)
-{
-    switch(config->dimension)
-    {
-        case oneD: return config->normalize ? "som1D_n.data":"som1D.data";
-        case threeD: return config->normalize ? "som3D_n.data":"som3D.data";
-        default: return config->normalize ? "som2D_n.data":"som2D.data";
-    }
-}
-
 //Append a specific step screenshot of SOM neurons
-void writeSomHistoAppend(long stepid, void *weights, somConfig* config, somScoreResult* scoreResult)
+void writeSomHistoAppend(char* filename, long stepid, void *weights, somConfig* config, somScoreResult* scoreResult)
 {
     FILE * fp;
-    fp = fopen(getsomFileName(config), "a");
+    fp = fopen(filename, "a");
     if(fp != NULL)
     {
         writeNeurons(fp, weights, config, stepid, scoreResult);
@@ -1422,9 +1423,9 @@ void writeSomHistoAppend(long stepid, void *weights, somConfig* config, somScore
 }
 
 //Write a screenshot of SOM neurons
-void writeSomHisto(void* weights, somConfig* config, somScoreResult* scoreResult){
+void writeSomHisto(char* filename, void* weights, somConfig* config, somScoreResult* scoreResult){
     FILE * fp;
-    fp = fopen(getsomFileName(config), "w");
+    fp = fopen(filename, "w");
     if(fp != NULL)
     {
         writeNeurons(fp, weights, config, scoreResult ? 0 : -1, scoreResult);

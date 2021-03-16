@@ -67,24 +67,6 @@ void displayMNISTNeuron(somScore** scores, somNeuron** weights, somConfig* confi
     }
 }
 
-void testParkinson()
-{
-    somConfig *config = getsomDefaultConfig();
-    void* weights;
-    dataVector* data = getParkinsonsData(config);
-    dataBoundary boundaries[config->p];
-    calculateBoundaries(data, boundaries, config);
-    config->nw=100;
-    config->alpha = 0.01;                                                
-    weights = getTrainedSom(data, config,boundaries, 0);
-    somScoreResult* result = getscore(data, weights, config, 1);
-    displayConfig(config);
-    displayScore(result, config);
-    clear_mem(weights, result, config); 
-    clear_data(data, config);
-    clear_config(config); 
-}
-
 void testMNIST_train()
 {
     char* filename = "trained_som.txt";
@@ -122,7 +104,6 @@ void testMNIST_train()
     config->alpha=0.05;
     config->map_r=40;
     config->map_c=40;
-    config->epochs = sample_limit*10;
     weights = getTrainedSom(data, config,boundaries, 0);
     somScoreResult* result = getscore(data, weights, config, 1);
     displayConfig(config);
@@ -132,6 +113,7 @@ void testMNIST_train()
         displayMNISTNeuron((somScore**)result->scores, (somNeuron**)weights, config, i);
     } 
     saveSom(weights, config, filename);
+    writeSomHisto("som_mnist.data", weights, config, result);
     clear_mem(weights, result, config);
         
     config->n=raw_limit;
@@ -182,8 +164,26 @@ void testMNIST_test()
     clear_config(config);   
 }
 
+void testParkinson()
+{
+    somConfig *config = getsomDefaultConfig();
+    void* weights;
+    dataVector* data = getParkinsonsData(config);
+    dataBoundary boundaries[config->p];
+    calculateBoundaries(data, boundaries, config);
+    config->nw=100;
+    config->alpha = 0.01;                                                
+    weights = getTrainedSom(data, config,boundaries, 0);
+    somScoreResult* result = getscore(data, weights, config, 1);
+    displayConfig(config);
+    displayScore(result, config);
+    clear_mem(weights, result, config); 
+    clear_data(data, config);
+    clear_config(config); 
+}
+
 int main()
 {
-    testIris();
+    testMNIST_train();
 
 }
