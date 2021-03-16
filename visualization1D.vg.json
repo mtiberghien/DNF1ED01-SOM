@@ -21,7 +21,6 @@
       "bind": {"input": "range", "min": 0.5, "step": 0.1, "max": 2}
     },
     {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
-    {"name": "showmap", "value": false, "bind": {"input": "checkbox"}},
     {"name": "showrealdata", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showneurons", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showlinks", "value": true, "bind": {"input": "checkbox"}},
@@ -62,16 +61,8 @@
         {"type": "formula", "expr": "datum.pl+datum.pw", "as": "x"},
         {"type": "formula", "expr": "datum.sl+datum.sw", "as": "y"},
         {"type": "formula", "expr": "scale('id', datum.class)", "as": "class"},
-        {
-          "type": "window",
-          "ops":["row_number"],
-          "as":["id"]
-        },
-        {
-          "type": "formula",
-          "expr":"datum.id - 1",
-          "as":"id"
-        }
+        {"type": "window", "ops": ["row_number"], "as": ["id"]},
+        {"type": "formula", "expr": "datum.id - 1", "as": "id"}
       ],
       "format": {
         "type": "csv",
@@ -92,22 +83,22 @@
         "type": "dsv",
         "delimiter": ";",
         "parse": {
-          "x-grid": "number",
-          "y-grid": "number",
-          "z-grid": "number",
+          "x": "number",
+          "y": "number",
+          "z": "number",
           "step": "number",
           "score": "number",
-          "score1": "number",
-          "score2": "number",
           "secondary": "number",
           "class": "number",
-          "stabilized": "number"
+          "stabilized": "number",
+          "score1": "number",
+          "score2": "number"
         },
         "header": [
           "vector",
-          "x-grid",
-          "y-grid",
-          "z-grid",
+          "x",
+          "y",
+          "z",
           "step",
           "score",
           "class",
@@ -118,7 +109,7 @@
           "entries"
         ]
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNMAPKD75AG3XHXTRNLALB3XS",
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som1D.data?token=ASL2ZNKSA34VIZ4UW3GA5ODALHJGM",
       "transform": [
         {"type": "extent", "signal": "steps", "field": "step"},
         {"type": "extent", "signal": "scores", "field": "score"},
@@ -143,16 +134,8 @@
           "expr": "datum.vector[2]+datum.vector[3]",
           "as": "x"
         },
-        {
-          "type": "formula",
-          "expr": "{x:datum['x-grid'], y:datum['y-grid'],z:datum['z-grid']}",
-          "as": "neuron"
-        },
-        {
-          "type": "formula",
-          "expr": "datum.neuron.x+'.'+datum.neuron.y+'.'+datum.neuron.z",
-          "as": "id"
-        }
+        {"type": "window", "ops": ["row_number"], "as": ["id"]},
+        {"type": "formula", "expr": "datum.id - 1", "as": "id"}
       ]
     },
     {
@@ -178,65 +161,25 @@
       ]
     },
     {
-      "name": "dimensions",
-      "source": "neurons",
-      "transform": [
-        {
-          "type": "aggregate",
-          "fields": ["x-grid", "y-grid", "z-grid"],
-          "ops": ["max", "max", "max"],
-          "as": ["dx", "dy", "dz"]
-        },
-        {
-          "type": "formula",
-          "expr": "[datum.dx+1, datum.dy+1, datum.dz+1]",
-          "as": "d"
-        }
-      ]
-    },
-    {
       "name": "links",
       "source": "neurons",
       "transform": [
         {
           "type": "project",
-          "fields": ["neuron", "id"],
-          "as": ["source", "s_id"]
+          "fields": ["id", "x", "y"],
+          "as": ["s_id", "sx", "sy"]
         },
-        {"type": "formula", "expr": "data('dimensions')[0].d", "as": "dim"},
-        {
-          "type": "formula",
-          "expr": "[min(datum.dim[0]-1,datum.source.x+1)+'.'+datum.source.y +'.'+datum.source.z,datum.source.x+'.'+min(datum.dim[1]-1,datum.source.y+1)+'.'+datum.source.z,datum.source.x+'.'+datum.source.y+'.'+min(datum.dim[2]-1,datum.source.z+1)]",
-          "as": "target"
-        },
-        {"type": "flatten", "fields": ["target"]},
+        {"type": "formula", "expr": "datum.s_id + 1", "as": "t_id"},
         {
           "type": "lookup",
           "from": "neurons",
           "key": "id",
-          "fields": ["s_id"],
-          "values": ["x", "y", "z"],
-          "as": ["s_x", "s_y", "s_z"]
+          "fields": ["t_id"],
+          "values": ["x", "y"],
+          "as": ["tx", "ty"]
         },
-        {
-          "type": "lookup",
-          "from": "neurons",
-          "key": "id",
-          "fields": ["target"],
-          "values": ["x", "y", "z", "neuron"],
-          "as": ["t_x", "t_y", "t_z", "target"]
-        }
+        {"type": "filter", "expr": "isValid(datum.tx) && isValid(datum.ty)"}
       ]
-    }
-  ],
-  "legends": [
-    {
-      "orient": "right",
-      "fill": "color",
-      "labelColor": "#fff",
-      "encode": {
-        "labels": {"update": {"text": {"signal": "scale('label',datum.value)"}}}
-      }
     }
   ],
   "scales": [
@@ -261,35 +204,10 @@
       "zero": false
     },
     {
-      "name": "xscale-grid",
-      "type": "linear",
-      "domain": {"data": "neurons", "field": "x-grid"},
-      "range": [
-        {"signal": "width*(1-scale)/2"},
-        {"signal": "width*(scale+1)/2"}
-      ]
-    },
-    {
-      "name": "yscale-grid",
-      "type": "linear",
-      "domain": {"data": "neurons", "field": "y-grid"},
-      "range": [
-        {"signal": "height*(1-scale)/2"},
-        {"signal": "height*(1+scale)/2"}
-      ],
-      "zero": false
-    },
-    {
       "name": "color",
       "type": "ordinal",
       "domain": {"data": "labels", "field": "id", "sort": true},
       "range": ["#555", "red", "yellow", "blue"]
-    },
-    {
-      "name": "label",
-      "type": "ordinal",
-      "domain": {"data": "labels", "field": "id"},
-      "range": {"data": "labels", "field": "name"}
     },
     {
       "name": "id",
@@ -298,17 +216,33 @@
       "range": {"data": "labels", "field": "id"}
     },
     {
+      "name": "label",
+      "type": "ordinal",
+      "domain": {"data": "labels", "field": "id", "sort": true},
+      "range": {"data": "labels", "field": "name"}
+    },
+    {
       "name": "score",
       "type": "linear",
       "domain": {"signal": "scores"},
       "range": [{"signal": "50*neuronscale"}, {"signal": "300*neuronscale"}]
     }
   ],
+  "legends": [
+    {
+      "orient": "right",
+      "fill": "color",
+      "labelColor": "#fff",
+      "encode": {
+        "labels": {"update": {"text": {"signal": "scale('label',datum.value)"}}}
+      }
+    }
+  ],
   "axes": [
     {
       "orient": "left",
       "scale": "yscale",
-      "title": {"signal": "showmap ? 'Rows':'Sepal.Width + Sepal.Length'"},
+      "title": "Sepal.Width + Sepal.Length",
       "titleColor": "#fff",
       "domain": false,
       "labels": false,
@@ -318,7 +252,7 @@
       "orient": "bottom",
       "scale": "xscale",
       "titleColor": "#fff",
-      "title": {"signal": "showmap ? 'Columns':'Petal.Width + Petal.Length'"},
+      "title": "Petal.Width + Petal.Length",
       "domain": false,
       "labels": false,
       "ticks": false
@@ -335,11 +269,7 @@
           "align": {"value": "center"},
           "fill": {"value": "#eee"}
         },
-        "update": {
-          "text": {
-            "signal": "(showmap ? 'SOM 2D map: ':'SOM 2D step: ') + current_step"
-          }
-        }
+        "update": {"text": {"signal": "'SOM 1D step: ' + current_step"}}
       }
     },
     {
@@ -349,7 +279,7 @@
         "enter": {"stroke": {"value": "#555"}},
         "update": {
           "size": {"value": 30, "mult": {"signal": "neuronscale"}},
-          "opacity": {"signal": "showrealdata && !showmap ? 0.5 : 0"},
+          "opacity": {"value": 0.7},
           "fill": {"field": "class", "scale": "color"},
           "xc": {"field": "x", "scale": "xscale"},
           "yc": {"field": "y", "scale": "yscale"}
@@ -363,7 +293,6 @@
         "enter": {"stroke": {"value": "#555"}},
         "update": {
           "size": {"value": 30, "mult": {"signal": "neuronscale"}},
-          "opacity": {"signal": "showrealdata && !showmap ? 1 : 0"},
           "fill": {"value": "white"},
           "xc": {"field": "x", "scale": "xscale"},
           "yc": {"field": "y", "scale": "yscale"}
@@ -378,22 +307,10 @@
           "stroke": {"value": "#bbb"},
           "strokeWidth": {"value": 0.5},
           "opacity": {"signal": "showlinks && showneurons ? 1 :0"},
-          "x": [
-            {"test": "showmap", "field": "source.x", "scale": "xscale-grid"},
-            {"field": "s_x", "scale": "xscale"}
-          ],
-          "y": [
-            {"test": "showmap", "field": "source.y", "scale": "yscale-grid"},
-            {"field": "s_y", "scale": "yscale"}
-          ],
-          "x2": [
-            {"test": "showmap", "field": "target.x", "scale": "xscale-grid"},
-            {"field": "t_x", "scale": "xscale"}
-          ],
-          "y2": [
-            {"test": "showmap", "field": "target.y", "scale": "yscale-grid"},
-            {"field": "t_y", "scale": "yscale"}
-          ]
+          "x": [{"field": "sx", "scale": "xscale"}],
+          "y": [{"field": "sy", "scale": "yscale"}],
+          "x2": [{"field": "tx", "scale": "xscale"}],
+          "y2": [{"field": "ty", "scale": "yscale"}]
         }
       }
     },
@@ -408,33 +325,18 @@
             "signal": "{'score max':datum.score1, 'score 2':datum.score2,'coords':'['+datum['x-grid']+','+datum['y-grid']+']'}"
           },
           "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
-          "opacity": [
-            {
-              "test": "!showmap",
-              "signal": "showneurons  ? ((!isDefined(selectedNeuron.id) || selectedNeuron.id === datum.id || datum.class !== selectedNeuron.class) ? (datum.stabilized ? 0.5: 1): 0.3) : 0"
-            }
-          ],
+          "opacity": {
+            "signal": "showneurons  ? ((!isDefined(selectedNeuron.id) || selectedNeuron.id === datum.id || datum.class !== selectedNeuron.class) ? (datum.stabilized ? 0.5: 1): 0.3) : 0"
+          },
           "size": [
-            {
-              "test": "showmap",
-              "field": "score",
-              "scale": "score",
-              "mult": {"signal": "15*scale*neuronscale"}
-            },
             {"field": "score", "scale": "score", "mult": {"signal": "2*scale"}}
           ],
           "fill": [
             {"test": "selectedNeuron.id == datum.id", "value": "white"},
             {"field": "class", "scale": "color"}
           ],
-          "xc": [
-            {"test": "showmap", "field": "x-grid", "scale": "xscale-grid"},
-            {"field": "x", "scale": "xscale"}
-          ],
-          "yc": [
-            {"test": "showmap", "field": "y-grid", "scale": "yscale-grid"},
-            {"field": "y", "scale": "yscale"}
-          ]
+          "xc": [{"field": "x", "scale": "xscale"}],
+          "yc": [{"field": "y", "scale": "yscale"}]
         }
       }
     },

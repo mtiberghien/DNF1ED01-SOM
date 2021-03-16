@@ -1,0 +1,199 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "width": 500,
+  "height": 600,
+  "background": "black",
+  "signals": [
+    {"name": "rows", "init": "y_extent[1]+1"},
+    {"name": "columns", "init": "x_extent[1]+1"},
+    {"name": "scale", "init": "round(100*max(1,width/height))/100"},
+    {"name": "sizeref", "init": "min(width,height)"},
+    {"name": "sizeSymbol", "update": "bandwidth('hscale')"},
+    {
+      "name": "selected",
+      "init": "{}",
+      "on": [
+        {"events": "symbol:mouseover", "update": "datum"},
+        {"events": "symbol:mouseout", "update": "{}"}
+      ]
+    },
+    {
+      "name": "sizeneuron",
+      "update": "height -(sizeSymbol*rows - (rows-1)*sizeSymbol/4)"
+    }
+  ],
+  "data": [
+    {
+      "name": "mnist",
+      "format": {
+        "type": "dsv",
+        "delimiter": ";",
+        "parse": {
+          "x": "number",
+          "y": "number",
+          "z": "number",
+          "step": "number",
+          "score": "number",
+          "secondary": "number",
+          "class": "number",
+          "stabilized": "number",
+          "score1": "number",
+          "score2": "number"
+        },
+        "header": [
+          "vector",
+          "x",
+          "y",
+          "z",
+          "step",
+          "score",
+          "class",
+          "secondary",
+          "stabilized",
+          "score1",
+          "score2",
+          "entries"
+        ]
+      },
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som_mnist.data?token=ASL2ZNPEURUGKNO7MP23OMDALHAIA",
+      "transform": [
+        {"type": "filter", "expr": "datum.step == 0"},
+        {
+          "type": "project",
+          "fields": ["vector", "x", "y", "class", "secondary"]
+        },
+        {"type": "extent", "field": "y", "signal": "y_extent"},
+        {"type": "extent", "field": "x", "signal": "x_extent"}
+      ]
+    },
+    {
+      "name": "neuron",
+      "source": "mnist",
+      "transform": [
+        {
+          "type": "filter",
+          "expr": "datum.x == selected.x && datum.y == selected.y"
+        },
+        {
+          "type": "formula",
+          "expr": "split(replace(replace(datum.vector, '[',''),']',''),',')",
+          "as": "vector"
+        },
+        {"type": "flatten", "fields": ["vector"], "index": "id"},
+        {"type": "formula", "expr": "toNumber(datum.vector)", "as": "vector"},
+        {"type": "formula", "expr": "floor(datum.id/28)", "as": "row"},
+        {"type": "formula", "expr": "floor(datum.id)%28", "as": "column"}
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "hscale",
+      "type": "band",
+      "domain": {"signal": "sequence(0,max(rows,columns)+1,1)"},
+      "range": [0, {"signal": "sizeref*scale"}]
+    },
+    {
+      "name": "nscalex",
+      "type": "band",
+      "domain": {"data": "neuron", "field": "column"},
+      "range": [
+        {"signal": "(width - sizeneuron)/2"},
+        {"signal": "(width + sizeneuron)/2"}
+      ]
+    },
+    {
+      "name": "nscaley",
+      "type": "band",
+      "domain": {"data": "neuron", "field": "row"},
+      "range": [{"signal": "(height - sizeneuron)"}, {"signal": "height"}]
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "domainMin": 0,
+      "domain": {"data": "mnist", "field": "class", "sort": true},
+      "range": {"scheme": "category20"}
+    },
+    {
+      "name": "ncolor",
+      "domainMin": 0,
+      "domain": {"data": "neuron", "field": "vector", "sort": true},
+      "range": {"scheme": "viridis"}
+    }
+  ],
+  "legends": [
+    {
+      "title": "Classes",
+      "orient": "right",
+      "fill": "color",
+      "labelColor": "#eee",
+      "titleColor": "#eee"
+    }
+  ],
+  "marks": [
+    {
+      "type": "symbol",
+      "from": {"data": "mnist"},
+      "encode": {
+        "enter": {
+          "shape": {"value": "m0,-1 l1,.5 v1 l-1,.5 l-1,-.5 v-1 l1,-.5"},
+          "stroke": {"value": "#777"}
+        },
+        "update": {
+          "size": {"signal": "pow(sizeSymbol,2)"},
+          "tooltip": [
+            {
+              "test": "datum.secondary === -1",
+              "signal": "{'class':datum.class,'coords':[datum.x,datum.y]}"
+            },
+            {
+              "test": "datum.secondary > -1",
+              "signal": "{'class':datum.class, 'secondary':datum.secondary, 'coords':[datum.x,datum.y]}"
+            }
+          ],
+          "fill": [
+            {"test": "datum.class >-1", "field": "class", "scale": "color"},
+            {"value": "#555"}
+          ],
+          "stroke": [
+            {
+              "test": "datum.secondary >=0",
+              "field": "secondary",
+              "scale": "color"
+            }
+          ],
+          "strokeWidth": [{"test": "datum.secondary >=0", "value": 3}],
+          "xc": {
+            "field": "x",
+            "scale": "hscale",
+            "offset": {
+              "signal": "(datum.y%2==1 ? 0 : sizeSymbol/2)  + sizeSymbol/4"
+            }
+          },
+          "yc": {
+            "field": "y",
+            "scale": "hscale",
+            "offset": {
+              "signal": "(datum.y > 0 ? -datum.y*sizeSymbol/4 : 0)  + sizeSymbol/2"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "rect",
+      "from": {"data": "neuron"},
+      "encode": {
+        "enter": {"strokeWidth": {"value": 0}},
+        "update": {
+          "xc": {"field": "column", "scale": "nscalex"},
+          "yc": {"field": "row", "scale": "nscaley"},
+          "width": {"band": true, "scale": "nscalex"},
+          "height": {"band": true, "scale": "nscaley"},
+          "fill": {"field": "vector", "scale": "ncolor"}
+        }
+      }
+    }
+  ]
+}
