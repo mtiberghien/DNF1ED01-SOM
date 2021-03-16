@@ -6,6 +6,7 @@
 #include "include/mnistdata.h"
 #include "include/som.h"
 #include "include/common.h"
+#include <time.h>
 
 void testIris()
 {
@@ -73,13 +74,15 @@ void testMNIST_train()
     somConfig *config = getsomDefaultConfig();
     void* weights;
     config->normalize=1;
-    int raw_limit = 10000;
-    int sample_limit = 500;
+    int raw_limit = -1;
+    int sample_limit = 5000;
+    time_t begin = time(NULL);
     printf("Reading data: ");
     fflush(stdout);
-    dataVector *data_raw = getMNISTData(config, raw_limit,0);
+    dataVector *data = getMNISTData(config, raw_limit,0);
+    raw_limit = config->n;
     printf("Done (%d lines read)\n", config->n);
-    printf("Creating Sample: ");
+    /* printf("Creating Sample: ");
     fflush(stdout);
     dataVector data[sample_limit];
     int proposed[config->n];
@@ -95,7 +98,7 @@ void testMNIST_train()
         proposed[index]=--n;
     }
     printf("Created Sample with %d lines\n", config->n);
-    config->n=sample_limit;
+    config->n=sample_limit; */
     printf("Calculating boundaries: ");
     fflush(stdout);
     dataBoundary boundaries[config->p];
@@ -117,8 +120,14 @@ void testMNIST_train()
     clear_mem(weights, result, config);
         
     config->n=raw_limit;
-    clear_data(data_raw, config);
+    clear_data(data, config);
     clear_config(config);
+    time_t end = time(NULL);
+    long dif = (long)difftime(end,begin);
+    int hours = dif/3600;
+    int minutes = (dif-(3600*hours))%60;
+    int seconds = (dif-(3600*hours)-(60*minutes));
+    printf("Training accomplished in %d hour(s), %d minute(s) %d seconde(s).\n", hours,  minutes, seconds);
 }
 
 void testMNIST_test()
