@@ -851,7 +851,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
         fflush(stdout);
     }
     int neighboursTrigger = config->epochs*config->useNeighboursTriggerRate;
-    int epoch = 0;
+    long epoch = 0;
     int currentRadius = cfg.radius;
     double tau2 = cfg.epochs/log(currentRadius);
 #ifdef TRACE_SOM
@@ -904,7 +904,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
     if(!silent)
     {
         {
-            printf("Done after %d epochs\n", epoch);
+            printf("Done after %ld epochs\n", epoch);
         }
     }  
 }
@@ -1435,7 +1435,7 @@ void writeSomHisto(char* filename, void* weights, somConfig* config, somScoreRes
 
 void writeConfig(FILE *fp, somConfig* config)
 {
-    fprintf(fp, "%d;%d;%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%d;%d\n", config->n, config->p, config->nw, config->dimension, config->map_b, config->map_r,config->map_c,
+    fprintf(fp, "%d;%d;%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%d;%ld\n", config->n, config->p, config->nw, config->dimension, config->map_b, config->map_r,config->map_c,
                                     config->radius, config->alpha, config->sigma, config->stabilizationTrigger, config->initialPercentCoverage,
                                     config->useNeighboursTriggerRate, config->nbFactorRadius1, config->normalize, config->epochs);
 }
@@ -1464,7 +1464,7 @@ void readConfig(char* line, somConfig* config)
             case 12: config->useNeighboursTriggerRate = atof(ptr);break;
             case 13: config->nbFactorRadius1 = atof(ptr);break;
             case 14: config->normalize = (short)atoi(ptr);break;
-            case 15: config->epochs = atoi(ptr);break;
+            case 15: config->epochs = atol(ptr);break;
         }
         ptr = strtok(NULL, delim);
         column++;

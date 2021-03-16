@@ -78,7 +78,7 @@ typedef struct somConfig{
     // Percent of epochs to start using neighbours method 1 means that will never be triggered 0 means that it will be triggered after first epoch
     double useNeighboursTriggerRate;
     //Number of epochs (one epoch = learn with one input vector)
-    int epochs;
+    long epochs;
     initialDistribution distribution;
     double nbFactorRadius1;
 } somConfig;
