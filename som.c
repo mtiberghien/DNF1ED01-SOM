@@ -120,16 +120,12 @@ void set2DMapSize(somConfig *config)
 {
     if(!config->map_r|| !config->map_c)
     {
-        //Arbitrary 4/3 ratio (16/9 didn't exist in the eighties ;))
-        double ratio = 4.0/3;
-        int y = ceil(sqrt(config->nw / ratio));
-        y-=config->nw%y;
-        int x = config->nw/y;
-        config->map_r=y;
-        config->map_c=x;      
+        int size = ceil(sqrt(config->nw));
+        config->map_r=size;
+        config->map_c=size;      
     }
-
     config->nw = config->map_r*config->map_c;
+
     if(!config->radius){
         config->radius = ceil((sqrt(config->initialPercentCoverage*config->nw) - 1)/2);
     }
@@ -609,7 +605,10 @@ void clear_mem1D(void* weights, void* score, somConfig* config)
     for(int i = 0; i < config->map_c; i++)
     {
         free(som[i].v);
-        free(som[i].neighbours);
+        if(som[i].neighbours)
+        {
+            free(som[i].neighbours);
+        }
         if(sc)
         {
             free(sc[i].scores);
@@ -707,23 +706,19 @@ double getInitialSigma(somConfig* config, double(*getdistfp)(int))
     return sigma;
 }
 
-//Get stabilized som neurons that has been train using provided data and config
-//The method initialize first the fonctions to use according to the configured dimension
-//The it evaluates the size of SOM map and initialize it
-//The learning loop is evaluating randomly each entry from the dataset during one episode
-//After each episode the method evaluates if som neurons have stabilized
-//When all neurons have stabilized return the neurons map
-void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, short silent)
+void* init(dataVector* data, somConfig* config, dataBoundary* boundaries, short silent)
 {
-    
     if(!config->nw){
         config->nw = floor(5 *sqrt(config->n *1.0));
         config->nw -= config->nw%12;
     }
-
+    if(config->alpha<=0)
+    {
+        config->alpha = 0.01;
+    }
     if(!config->epochs)
     {
-        config->epochs = config->n*10;
+        config->epochs = config->n*(1/config->alpha);
     }
     double (*getrandomfp)(dataBoundary);
     switch(config->distribution)
@@ -732,44 +727,21 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
         default: getrandomfp = getRandomUsingMinMax;break;
     }
     void* (*initfp)(dataVector*, somConfig*, dataBoundary*, double(*)(dataBoundary));
-    void (*learnfp)(int, dataVector*, void*, somConfig*, void (*)(dataVector*,void*,somConfig*));
-    void (*updatenbfp)(void*, somConfig*);
-    void (*findwnfp)(dataVector*, void*, somConfig*);
     double (*getdistfp)(int);
-#ifdef TRACE_SOM
-    void (*clearscorefp)(void*, somConfig*);
-#endif
     switch (config->dimension){
         case oneD:
-         initfp = getsom1D;
-         learnfp = learn1D;
-         updatenbfp = update_neighbours1D;
-         findwnfp = findWinner1D;
-         getdistfp = getDistance1D;
-#ifdef TRACE_SOM
-         clearscorefp = clear_score1D;
-#endif
+            initfp = getsom1D;
+            getdistfp = getDistance1D;
          break;
         case threeD:
-         initfp = getsom3D;
-         learnfp = learn3D;
-         updatenbfp = update_neighbours3D;
-         findwnfp = findWinner3D;
-         getdistfp = getDistance3D;
-#ifdef TRACE_SOM
-         clearscorefp = clear_score3D;
-#endif
+            initfp = getsom3D;
+            getdistfp = getDistance3D;
          break;
         default:
         config->dimension = twoD;
-         initfp = getsom2D;
-         learnfp = learn2D;
-         updatenbfp = update_neighbours2D;
-         findwnfp = findWinner2D;
-         getdistfp = getDistance2D;
-#ifdef TRACE_SOM
-         clearscorefp = clear_score2D;
-#endif
+            initfp = getsom2D;
+            getdistfp = getDistance2D;
+        break;
     }
     if(!silent)
     {
@@ -780,15 +752,56 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
     config->sigma = getInitialSigma(config, getdistfp);
     if(!silent)
     {
-        printf("%7s\n", "Done");
+        printf("%s\n", "Done");
     }
+    return weights;
+}
+
+void fit(dataVector* data, void* weights, somConfig* config, short silent)
+{
+    void (*learnfp)(int, dataVector*, void*, somConfig*, void (*)(dataVector*,void*,somConfig*));
+    void (*updatenbfp)(void*, somConfig*);
+    void (*findwnfp)(dataVector*, void*, somConfig*);
+#ifdef TRACE_SOM
+    void (*clearscorefp)(void*, somConfig*);
+#endif
+    switch (config->dimension){
+        case oneD:
+            learnfp = learn1D;
+            updatenbfp = update_neighbours1D;
+            findwnfp = findWinner1D;
+#ifdef TRACE_SOM
+         clearscorefp = clear_score1D;
+#endif
+         break;
+        case threeD:
+            learnfp = learn3D;
+            updatenbfp = update_neighbours3D;
+            findwnfp = findWinner3D;
+#ifdef TRACE_SOM
+         clearscorefp = clear_score3D;
+#endif
+         break;
+        default:
+            config->dimension = twoD;
+            learnfp = learn2D;
+            updatenbfp = update_neighbours2D;
+            findwnfp = findWinner2D;
+#ifdef TRACE_SOM
+         clearscorefp = clear_score2D;
+#endif
+        break;
+    }
+    somConfig cfg = *config;
+    double tau = cfg.epochs/log(cfg.sigma);
+    int vectorsToPropose[cfg.n];
     if(config->nw == 0)
     {
         if(!silent)
         {
             printf("Aborted, need at least one neuron\n");
         }
-        return weights;
+        return;
     }
     if(!silent)
     {
@@ -800,18 +813,17 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
     {
         printf("Done\n");
     }
-    somConfig cfg = *config;
-    double tau = cfg.epochs/log(cfg.sigma);
-    int vectorsToPropose[cfg.n];
     if(!silent)
     {
         printf("Initializing SOM Last winners: ");
         fflush(stdout);
     }
-    for(int i=0;i<cfg.n;i++){
+    int n = config->n;
+    for(int i=0;i<n;i++)
+    {
          if(!silent)
         {
-            printf("%6.2f%%\033[7D", (double)i*100/cfg.n);
+            printf("%6.2f%%\033[7D", (double)i*100/n);
             fflush(stdout);
         }
         findwnfp(&data[i], weights, config);
@@ -819,7 +831,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
     }
     if(!silent)
     {
-        printf("%7s\n", "Done");
+        printf("%7s\033[7D%s\n", "","Done");
     }
     if(!silent)
     {
@@ -832,7 +844,7 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
     double tau2 = cfg.epochs/log(currentRadius);
 #ifdef TRACE_SOM
     long time = 0;
-    writeSom(weights, config, NULL);
+    writeSomHisto(weights, config, NULL);
 #endif
     while(epoch<cfg.epochs)
     {
@@ -855,8 +867,8 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
 #ifdef TRACE_SOM
                 if(time++%TRACE_SOM == 0)
                 {
-                    somScoreResult* result = getscore(data, weights, config);
-                    writeSomAppend(epoch, weights, config, result);
+                    somScoreResult* result = getscore(data, weights, config, epoch>= neighboursTrigger);
+                    writeSomHistoAppend(epoch, weights, config, result);
                     clearscorefp(result->scores, config);
                     free(result);
                 }
@@ -872,8 +884,8 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
         }
     }
 #ifdef TRACE_SOM
-    somScoreResult* result = getscore(data, weights, config);
-    writeSomAppend(epoch, weights, config, result);
+    somScoreResult* result = getscore(data, weights, config,1);
+    writeSomHistoAppend(epoch, weights, config, result);
     clearscorefp(result->scores, config);
     free(result);
 #endif
@@ -882,8 +894,19 @@ void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, shor
         {
             printf("Done after %d epochs\n", epoch);
         }
-    }
-    
+    }  
+}
+
+//Get stabilized som neurons that has been train using provided data and config
+//The method initialize first the fonctions to use according to the configured dimension
+//The it evaluates the size of SOM map and initialize it
+//The learning loop is evaluating randomly each entry from the dataset during one episode
+//After each episode the method evaluates if som neurons have stabilized
+//When all neurons have stabilized return the neurons map
+void* getTrainedSom(dataVector* data, somConfig *config, dataBoundary* boundaries, short silent)
+{
+    void* weights = init(data,config, boundaries, silent);
+    fit(data, weights, config, silent);
     return weights;
 }
 
@@ -1074,7 +1097,7 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     scoreResult->scores = score;
 }
 //Retrieve the scoreResult object for specific weights and config
-somScoreResult* getscore(dataVector* data, void* weights, somConfig* config)
+somScoreResult* getscore(dataVector* data, void* weights, somConfig* config, short useFromNeighbours)
 {
     somScoreResult* result = malloc(sizeof(somScoreResult));
     void (*scorefp)(dataVector*,  void* , somConfig*, somScoreResult*, void (*)(dataVector*,void*,somConfig*));
@@ -1091,7 +1114,7 @@ somScoreResult* getscore(dataVector* data, void* weights, somConfig* config)
             findwnfp = findWinner2D;
          break;
     }
-    if(config->useNeighboursTriggerRate<0.5)
+    if(useFromNeighbours)
     {
         findwnfp = find_winner_fromNeighbours;
     }
@@ -1180,8 +1203,14 @@ void displayScoreAtom(somScore* score)
     {
         printf("\033[0;%d;%dm", getTerminalColorCode(c), getTerminalBGColorCode(s.secondClass));
     }
-
-    printf("%d", c);
+    if(c>=0)
+    {
+        printf("%d", c);
+    }
+    else
+    {
+        printf(" ");
+    }
     printf("\033[0m ");
 }
 
@@ -1381,7 +1410,7 @@ char* getsomFileName(somConfig* config)
 }
 
 //Append a specific step screenshot of SOM neurons
-void writeSomAppend(long stepid, void *weights, somConfig* config, somScoreResult* scoreResult)
+void writeSomHistoAppend(long stepid, void *weights, somConfig* config, somScoreResult* scoreResult)
 {
     FILE * fp;
     fp = fopen(getsomFileName(config), "a");
@@ -1393,7 +1422,7 @@ void writeSomAppend(long stepid, void *weights, somConfig* config, somScoreResul
 }
 
 //Write a screenshot of SOM neurons
-void writeSom(void* weights, somConfig* config, somScoreResult* scoreResult){
+void writeSomHisto(void* weights, somConfig* config, somScoreResult* scoreResult){
     FILE * fp;
     fp = fopen(getsomFileName(config), "w");
     if(fp != NULL)
@@ -1439,6 +1468,77 @@ void readConfig(char* line, somConfig* config)
         ptr = strtok(NULL, delim);
         column++;
     }
+    if(ptr)
+    {
+        free(ptr);
+    }
+}
+
+void readSom(FILE* fp, somNeuron* n, int p)
+{
+    size_t len = 0;
+    ssize_t read;
+    char* line = NULL;
+    read = getline(&line, &len, fp);
+    char delim[]=";";
+    char *ptr = strtok(line, delim);
+    int column=0;
+    n->neighbours = NULL;
+    n->nc = 0;
+    while(ptr != NULL && column < 3)
+    {
+        switch(column)
+        {
+            case 0: n->b = atoi(ptr);break;
+            case 1: n->r = atoi(ptr);break;
+            case 2: n->c = atoi(ptr);break;
+        }
+        ptr = strtok(NULL, delim);
+        column++;
+    }
+    column =0;
+    n->v = malloc(p*sizeof(double));
+    while(ptr!= NULL && column<p)
+    {
+        n->v[column] = atof(ptr);
+        ptr = strtok(NULL, delim);
+        column++;
+    }
+    if(ptr)
+    {
+        free(ptr);
+    }
+}
+
+void* readSom1D(FILE* fp, somConfig* config)
+{
+    int p= config->p;
+    somNeuron* weights = (somNeuron*)malloc(config->map_c*sizeof(somNeuron));
+    for(int i=0;i<config->map_c;i++)
+    {
+        readSom(fp, &weights[i], p);
+    }
+    return weights;
+}
+
+void* readSom2D(FILE* fp, somConfig* config)
+{
+    somNeuron** weights = (somNeuron**)malloc(config->map_r*sizeof(somNeuron*));
+    for(int i=0;i<config->map_r;i++)
+    {
+        weights[i]= readSom1D(fp, config);
+    }
+    return weights;
+}
+
+void* readSom3D(FILE* fp, somConfig* config)
+{
+    somNeuron*** weights = (somNeuron***)malloc(config->map_b*sizeof(somNeuron**));
+    for(int i=0;i<config->map_b;i++)
+    {
+        weights[i]= readSom2D(fp, config);
+    }
+    return weights;
 }
 
 void saveSom(void* weights, somConfig* config, char* filename)
@@ -1453,13 +1553,12 @@ void saveSom(void* weights, somConfig* config, char* filename)
     fclose(fp);
 }
 
-void loadSom(char* filename)
+void* loadSom(char* filename, somConfig* config)
 {
     FILE * fp;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
-    somConfig* config = (somConfig*)malloc(sizeof(somConfig));
     fp = fopen(filename, "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
@@ -1469,11 +1568,16 @@ void loadSom(char* filename)
     {
         readConfig(line, config);
     }
-    while ((read = getline(&line, &len, fp)) != -1) {
-        //TODO Read neurons
+    void* (*readfp)(FILE*, somConfig*);
+    switch(config->dimension){
+        case oneD: readfp = readSom1D;break;
+        case threeD: readfp = readSom3D;break;
+        default: readfp = readSom2D;break;
     }
+    void* weights = readfp(fp, config);
 
     fclose(fp);
+    return weights;
 }
 
 

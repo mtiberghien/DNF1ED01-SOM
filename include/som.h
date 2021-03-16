@@ -33,13 +33,13 @@ typedef struct somScoreResult
 
 //Get default settings for SOM
 somConfig* getsomDefaultConfig();
-//Get Initialized weights vectors for a specific dataset specific config and data boundaries. With silent set to 1, no output on the Terminal
-void* getsom(dataVector* data, somConfig *config, dataBoundary* boundaries, short silent);
+//Get Initialized and trained weights vectors for a specific dataset specific config and data boundaries. With silent set to 1, no output on the Terminal
+void* getTrainedSom(dataVector* data, somConfig *config, dataBoundary* boundaries, short silent);
 //Append the current state of SOM neurons (one line by neuron) using provided step id and score
-void writeSomAppend(long stepid, void *weights, somConfig* config, somScoreResult* scoreResult);
+void writeSomHistoAppend(long stepid, void *weights, somConfig* config, somScoreResult* scoreResult);
 //Write the neurons as csv
-void writeSom(void* weights, somConfig* config, somScoreResult* scoreResult);
-somScoreResult* getscore(dataVector* data, void* weights, somConfig *config);
+void writeSomHisto(void* weights, somConfig* config, somScoreResult* scoreResult);
+somScoreResult* getscore(dataVector* data, void* weights, somConfig *config, short useFromNeighbours);
 //Clear som objects (weighs and score)
 void clear_mem(void* weights,  somScoreResult* score,somConfig *config);
 //Clear somConfig object
@@ -50,3 +50,7 @@ void displayConfig(somConfig* config);
 void displayScore(somScoreResult* scoreResult, somConfig* config);
 //reset the number of neurons, blocks, rows, columns and radius so it can be configured automatically
 void resetConfig(somConfig* config);
+void saveSom(void* weights, somConfig* config, char* filename);
+void* loadSom(char* filename, somConfig* config);
+//Train SOM weights with provided data and config
+void fit(dataVector* data, void* weights, somConfig* config, short silent);

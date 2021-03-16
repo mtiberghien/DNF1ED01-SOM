@@ -3,14 +3,15 @@
 #include <stdlib.h>
 #include "include/common.h"
 
-dataVector* getMNISTData(somConfig *config, int limit)
+dataVector* getMNISTData(somConfig *config, int limit, short test)
 {
      FILE * fp;
     char * line = NULL;
+    char* filename = test ? "../../datasets/mnist_test.csv":"../../datasets/mnist_train.csv";
     size_t len = 0;
     ssize_t read;
     dataVector * data = (dataVector*)malloc(sizeof(dataVector));
-    fp = fopen("../../datasets/mnist_train.csv", "r");
+    fp = fopen(filename, "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
     int ln = 0;
