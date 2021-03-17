@@ -1,7 +1,7 @@
 {
   "$schema": "https://vega.github.io/schema/vega/v5.json",
-  "width": 500,
-  "height": 600,
+  "width": 700,
+  "height": 800,
   "background": "black",
   "signals": [
     {"name": "rows", "init": "y_extent[1]+1"},
@@ -55,7 +55,7 @@
           "entries"
         ]
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som_mnist.data?token=ASL2ZNPEURUGKNO7MP23OMDALHAIA",
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/5fa401173adaa40ae136de7f1040070ddbe48d89/som_mnist.data?token=ASL2ZNOWTHEJEK3JHQG24GDALMTGI",
       "transform": [
         {"type": "filter", "expr": "datum.step == 0"},
         {
