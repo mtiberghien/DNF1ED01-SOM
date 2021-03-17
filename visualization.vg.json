@@ -1,7 +1,7 @@
 {
   "$schema": "https://vega.github.io/schema/vega/v5.json",
-  "width": 600,
-  "height": 450,
+  "width": 800,
+  "height": 600,
   "background": "black",
   "signals": [
     {
@@ -62,16 +62,8 @@
         {"type": "formula", "expr": "datum.pl+datum.pw", "as": "x"},
         {"type": "formula", "expr": "datum.sl+datum.sw", "as": "y"},
         {"type": "formula", "expr": "scale('id', datum.class)", "as": "class"},
-        {
-          "type": "window",
-          "ops":["row_number"],
-          "as":["id"]
-        },
-        {
-          "type": "formula",
-          "expr":"datum.id - 1",
-          "as":"id"
-        }
+        {"type": "window", "ops": ["row_number"], "as": ["id"]},
+        {"type": "formula", "expr": "datum.id - 1", "as": "id"}
       ],
       "format": {
         "type": "csv",

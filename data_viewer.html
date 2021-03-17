@@ -10,21 +10,43 @@
 .vega-bind-name{
   color:#fff;
 }
+span {
+  color:#fff;
+}
 </style>
 <body style="background-color:black">
+
 <div id="container" style="text-align:center">
-<div id="vis" style="display:inline-block"></div>
-<div id="vis2" style="display:inline-block"></div>
+<table style="display:inline-block">
+<tbody>
+<tr>
+</tr>
+<td><div id="vis1"></div></td>
+<td><div id="vis2"></div></td>
+<tr>
+<td><div id="vis3"></div></td>
+<td><div id="vis4"></div></td>
+</tr>
+</tbody>
+</table>
 </div>
 
 
 <script type="text/javascript">
-  var spec = "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/visualization.vg.json?token=ASL2ZNODDUNFAZAO7BZDMPTAJXYMO";
-  vegaEmbed('#vis', spec).then(function(result) {
+var spec1 = "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/visualization1D.vg.json?token=ASL2ZNNYEZFFBLGQWWDVHE3ALLT22";
+  vegaEmbed('#vis1', spec1).then(function(result) {
   }).catch(console.error);
   
-  var spec2 = "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/visualization3D.vg.json?token=ASL2ZNLJRIB6TWFXOOPLQJLAKG2TY";
+  var spec2 = "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/visualization.vg.json?token=ASL2ZNOYIT3Y355FTAZ2N33ALLP62";
   vegaEmbed('#vis2', spec2).then(function(result) {
+  }).catch(console.error);
+
+  var spec3 = "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/visualization3D.vg.json?token=ASL2ZNO6LJJ3FC2STB2BCVTALLUQU";
+  vegaEmbed('#vis3', spec3).then(function(result) {
+  }).catch(console.error);
+  
+  var spec4 = "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/visualization_hexagons.vg.json?token=ASL2ZNKWHO2BGBKCM63EWJTALLUI2";
+  vegaEmbed('#vis4', spec4).then(function(result) {
   }).catch(console.error);
 
 </script>

@@ -105,8 +105,9 @@ void testMNIST_train()
     calculateBoundaries(data, boundaries, config); 
     printf("Done\n");                                                    
     config->alpha=0.05;
-    config->map_r=40;
-    config->map_c=40;
+    config->map_r=120;
+    config->map_c=120;
+    config->nbFactorRadius1 = 0.7;
     weights = getTrainedSom(data, config,boundaries, 0);
     somScoreResult* result = getscore(data, weights, config, 1);
     displayConfig(config);
@@ -125,7 +126,7 @@ void testMNIST_train()
     time_t end = time(NULL);
     long dif = (long)difftime(end,begin);
     int hours = dif/3600;
-    int minutes = (dif-(3600*hours))%60;
+    int minutes = (dif-(3600*hours))/60;
     int seconds = (dif-(3600*hours)-(60*minutes));
     printf("Training accomplished in %d hour(s), %d minute(s) %d seconde(s).\n", hours,  minutes, seconds);
 }
