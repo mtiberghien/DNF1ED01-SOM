@@ -15,11 +15,9 @@
 somConfig* getsomDefaultConfig(){
     somConfig* config = malloc(sizeof(somConfig));
     config->normalize=1;
-    config->stabilizationTrigger = 0.001;
     config->dimension = twoD;
     config->alpha = 0.01;
     config->initialPercentCoverage = 0.6;
-    config->useNeighboursTriggerRate = 0.1;
     config->distribution = usingMeans;
     config->nbFactorRadius1 = 0.5;
 }
@@ -850,20 +848,16 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
         printf("Calculating  %dD SOM for %d entries and %d parameters :", config->dimension, config->n, config->p);
         fflush(stdout);
     }
-    int neighboursTrigger = config->epochs*config->useNeighboursTriggerRate;
     long epoch = 0;
     int currentRadius = cfg.radius;
     double tau2 = cfg.epochs/log(currentRadius);
+    findwnfp = find_winner_fromNeighbours;
 #ifdef TRACE_SOM
     long time = 0;
     writeSomHisto(filename, weights, config, NULL);
 #endif
     while(epoch<cfg.epochs)
     {
-        if(epoch >= neighboursTrigger)
-        {
-            findwnfp = find_winner_fromNeighbours;
-        }
         for(int i=cfg.n-1;i>=0;i--)
         {
             if(!silent)
@@ -879,13 +873,17 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
 #ifdef TRACE_SOM
                 if(time++%TRACE_SOM == 0)
                 {
-                    somScoreResult* result = getscore(data, weights, config, epoch>= neighboursTrigger);
+                    somScoreResult* result = getscore(data, weights, config, 1, 1);
                     writeSomHistoAppend(filename, epoch, weights, config, result);
                     clearscorefp(result->scores, config);
                     free(result);
                 }
 #endif  
             epoch++;
+            if(epoch == cfg.epochs)
+            {
+                break;
+            }
 
         }
         currentRadius = (int)(config->radius*exp(-epoch/tau2));
@@ -896,7 +894,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
         }
     }
 #ifdef TRACE_SOM
-    somScoreResult* result = getscore(data, weights, config,1);
+    somScoreResult* result = getscore(data, weights, config,1,1);
     writeSomHistoAppend(filename, epoch, weights, config, result);
     clearscorefp(result->scores, config);
     free(result);
@@ -1011,37 +1009,68 @@ void updateScoreStats(somScore* s, int nClasses, somScoreResult* scoreResult)
     }
 }
 //Retrieve scores for 1D SOM neurons
-void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult, void (*findwnfp)(dataVector*,void*,somConfig*))
+void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult, void (*findwnfp)(dataVector*,void*,somConfig*), short silent)
 {
     somScore* score = (somScore*)malloc(sizeof(somScore) * config->map_c);
     somNeuron* som = (somNeuron*)weights;
     scoreResult->nActivatedNodes=0;
     int nClasses = scoreResult->nClasses;
+    if(!silent)
+    {
+        printf("Initializing 1D Scores");
+        fflush(stdout);
+    }
     for(int i=0;i<config->map_c;i++)
     {
         initScore(&score[i], nClasses);
     }
-    for(int i=0;i<config->n;i++)
+    if(!silent)
     {
+        printf("\033[2K\rFinding winners: ");
+        fflush(stdout);
+    }
+    int n = config->n;
+    for(int i=0;i<n;i++)
+    {
+        if(!silent)
+        {
+            printf("%6.2f%%\033[7D", (double)i*100/n);
+            fflush(stdout);
+        }
         dataVector* v = &data[i];
         findwnfp(v,weights,config);
         somNeuron* winner = v->lastWinner;
         updateScore(&score[winner->c],v->class, i);
 
     }
+    if(!silent)
+    {
+        printf("\033[2K\rUpdating stats: ");
+        fflush(stdout);
+
+    }
     for(int i=0;i<config->map_c;i++)
     {
         updateScoreStats(&score[i], nClasses, scoreResult);
     }
+    if(!silent)
+    {
+        printf("\033[2K\r");
+    }
     scoreResult->scores = score;
 }
 //Retrieve scores for 2D SOM neurons
-void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult, void (*findwnfp)(dataVector*,void*,somConfig*))
+void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult, void (*findwnfp)(dataVector*,void*,somConfig*), short silent)
 {
     somScore** score = (somScore**)malloc(sizeof(somScore*) * config->map_r);
     somNeuron** som = (somNeuron**)weights;
     scoreResult->nActivatedNodes=0;
     int nClasses = scoreResult->nClasses;
+    if(!silent)
+    {
+        printf("Initializing 2D Scores: ");
+        fflush(stdout);
+    }
     for(int i=0;i<config->map_r;i++)
     {
         score[i] = (somScore*)malloc(sizeof(somScore)* config->map_c);
@@ -1050,12 +1079,29 @@ void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult*
             initScore(&score[i][j], nClasses);
         }
     }
-    for(int i=0;i<config->n;i++)
+    if(!silent)
     {
+        printf("\033[2K\rFinding winners: ");
+        fflush(stdout);
+    }
+    int n = config->n;
+    for(int i=0;i<n;i++)
+    {
+        if(!silent)
+        {
+            printf("%6.2f%%\033[7D", (double)i*100/n);
+            fflush(stdout);
+        }
         dataVector* v = &data[i];
         findwnfp(v,weights,config);
         somNeuron* winner = v->lastWinner;
         updateScore(&score[winner->r][winner->c],v->class, i);
+    }
+    if(!silent)
+    {
+        printf("\033[2K\rUpdating stats: ");
+        fflush(stdout);
+
     }
     for(int i=0;i<config->map_r;i++)
     {
@@ -1065,15 +1111,24 @@ void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult*
         }
         
     }
+    if(!silent)
+    {
+        printf("\033[2K\r");
+    }
     scoreResult->scores = score;
 }
 //Retrieve scores for 3D SOM neurons
-void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult, void (*findwnfp)(dataVector*,void*,somConfig*))
+void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult* scoreResult, void (*findwnfp)(dataVector*,void*,somConfig*), short silent)
 {
     somScore*** score = (somScore***)malloc(sizeof(somScore**) * config->map_b);
     somNeuron*** som = (somNeuron***)weights;
     scoreResult->nActivatedNodes=0;
     int nClasses = scoreResult->nClasses;
+    if(!silent)
+    {
+        printf("Initializing 3D Scores: ");
+        fflush(stdout);
+    }
     for(int i=0;i<config->map_b;i++)
     {
         score[i] = (somScore**)malloc(sizeof(somScore*)* config->map_r);
@@ -1086,12 +1141,29 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
             }
         }
     }
-    for(int i=0;i<config->n;i++)
+    if(!silent)
     {
+        printf("\033[2K\rFinding winners: ");
+        fflush(stdout);
+    }
+    int n = config->n;
+    for(int i=0;i<n;i++)
+    {
+        if(!silent)
+        {
+            printf("%6.2f%%\033[7D", (double)i*100/n);
+            fflush(stdout);
+        }
         dataVector* v = &data[i];
         findwnfp(v,weights,config);
         somNeuron* winner = v->lastWinner;
         updateScore(&score[winner->b][winner->r][winner->c],v->class, i);
+    }
+    if(!silent)
+    {
+        printf("\033[2K\rUpdating stats: ");
+        fflush(stdout);
+
     }
     for(int i=0;i<config->map_b;i++)
     {
@@ -1106,13 +1178,22 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
         }
         
     }
+    if(!silent)
+    {
+        printf("\033[2K\r");
+    }
     scoreResult->scores = score;
 }
 //Retrieve the scoreResult object for specific weights and config
-somScoreResult* getscore(dataVector* data, void* weights, somConfig* config, short useFromNeighbours)
+somScoreResult* getscore(dataVector* data, void* weights, somConfig* config, short useFromNeighbours, short silent)
 {
+    if(!silent)
+    {
+        printf("Scoring %d neurons using %d data and %d parameters:\n", config->nw, config->n, config->p);
+        fflush(stdout);
+    }
     somScoreResult* result = malloc(sizeof(somScoreResult));
-    void (*scorefp)(dataVector*,  void* , somConfig*, somScoreResult*, void (*)(dataVector*,void*,somConfig*));
+    void (*scorefp)(dataVector*,  void* , somConfig*, somScoreResult*, void (*)(dataVector*,void*,somConfig*), short);
     void (*findwnfp)(dataVector*,void*,somConfig*);
     switch (config->dimension)
     {
@@ -1131,7 +1212,11 @@ somScoreResult* getscore(dataVector* data, void* weights, somConfig* config, sho
         findwnfp = find_winner_fromNeighbours;
     }
     result->nClasses = getClassesCount(data, config->n);
-    scorefp(data, weights, config, result, findwnfp);
+    scorefp(data, weights, config, result, findwnfp, silent);
+    if(!silent)
+    {
+        printf("\033[A\033[KScoring %d neurons using %d data and %d parameters: Done\n", config->nw, config->n, config->p);
+    }
     return result;
 }
 #pragma endregion
@@ -1300,7 +1385,7 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p)
             fputs(",", fp);
         }
     }
-    fprintf(fp, "];%d;%d;%d;%ld;%d;%d;%d;%d;%d;%d", x,y,z , stepId, s, class,  class2, stabilized, classtotalEntries, class2totalEntries);
+    fprintf(fp, "];%d;%d;%d;%ld;%d;%d;%d;%d;%d", x,y,z , stepId, s, class,  class2, classtotalEntries, class2totalEntries);
     fputs(";[", fp);
     int limit = s-1;
     for(int i=0;i<s;i++)
@@ -1367,7 +1452,7 @@ void saveNeuron(FILE* fp, somNeuron* n, int p)
             fputs(";", fp);
         }
     }
-    fputs("]\n", fp);
+    fputs("\n", fp);
 }
 
 //Serializes 1D SOM neurons
@@ -1435,9 +1520,9 @@ void writeSomHisto(char* filename, void* weights, somConfig* config, somScoreRes
 
 void writeConfig(FILE *fp, somConfig* config)
 {
-    fprintf(fp, "%d;%d;%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%d;%ld\n", config->n, config->p, config->nw, config->dimension, config->map_b, config->map_r,config->map_c,
-                                    config->radius, config->alpha, config->sigma, config->stabilizationTrigger, config->initialPercentCoverage,
-                                    config->useNeighboursTriggerRate, config->nbFactorRadius1, config->normalize, config->epochs);
+    fprintf(fp, "%d;%d;%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%d;%ld\n", config->n, config->p, config->nw, config->dimension, config->map_b, config->map_r,config->map_c,
+                                    config->radius, config->alpha, config->sigma, config->initialPercentCoverage,
+                                    config->nbFactorRadius1, config->normalize, config->epochs);
 }
 
 void readConfig(char* line, somConfig* config)
@@ -1445,7 +1530,7 @@ void readConfig(char* line, somConfig* config)
     char delim[]=";";
     char *ptr = strtok(line, delim);
     int column=0;
-    while(ptr != NULL && column < 16)
+    while(ptr != NULL && column < 14)
     {
         switch(column)
         {
@@ -1459,12 +1544,10 @@ void readConfig(char* line, somConfig* config)
             case 7: config->radius = atoi(ptr);break;
             case 8: config->alpha = atof(ptr);break;
             case 9: config->sigma = atof(ptr);break;
-            case 10: config->stabilizationTrigger = atof(ptr);break;
-            case 11: config->initialPercentCoverage = atof(ptr);break;
-            case 12: config->useNeighboursTriggerRate = atof(ptr);break;
-            case 13: config->nbFactorRadius1 = atof(ptr);break;
-            case 14: config->normalize = (short)atoi(ptr);break;
-            case 15: config->epochs = atol(ptr);break;
+            case 10: config->initialPercentCoverage = atof(ptr);break;
+            case 11: config->nbFactorRadius1 = atof(ptr);break;
+            case 12: config->normalize = (short)atoi(ptr);break;
+            case 13: config->epochs = atol(ptr);break;
         }
         ptr = strtok(NULL, delim);
         column++;

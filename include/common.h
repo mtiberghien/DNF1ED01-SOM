@@ -69,14 +69,10 @@ typedef struct somConfig{
     //Neighborhood radius (the algorithm will look for ((2*radius)+1)^dimensions neighboors (winner included)
     // -> calculated if not provided
     int radius;
-    //A neuron will be considered as stable if the update absolute delta fore each parameter is smaller than the value -> 0.001 by default
-    double stabilizationTrigger;
     //The neighborhood initial percentage coverage (0 to 1) -> 0.6 by default
     double initialPercentCoverage;
     // 1 if input data should be normalized, 0 otherwise -> 1 by default
     short normalize;
-    // Percent of epochs to start using neighbours method 1 means that will never be triggered 0 means that it will be triggered after first epoch
-    double useNeighboursTriggerRate;
     //Number of epochs (one epoch = learn with one input vector)
     long epochs;
     initialDistribution distribution;

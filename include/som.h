@@ -39,7 +39,7 @@ void* getTrainedSom(dataVector* data, somConfig *config, dataBoundary* boundarie
 void writeSomHistoAppend(char* filename, long stepid, void *weights, somConfig* config, somScoreResult* scoreResult);
 //Write the neurons as csv
 void writeSomHisto(char* filename, void* weights, somConfig* config, somScoreResult* scoreResult);
-somScoreResult* getscore(dataVector* data, void* weights, somConfig *config, short useFromNeighbours);
+somScoreResult* getscore(dataVector* data, void* weights, somConfig *config, short useFromNeighbours, short silent);
 //Clear som objects (weighs and score)
 void clear_mem(void* weights,  somScoreResult* score,somConfig *config);
 //Clear somConfig object
