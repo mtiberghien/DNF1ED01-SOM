@@ -2,6 +2,7 @@
   "$schema": "https://vega.github.io/schema/vega/v5.json",
   "width": 700,
   "height": 525,
+  "padding": 5,
   "background": "black",
   "signals": [
     {
@@ -23,7 +24,6 @@
     {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
     {"name": "showmap", "value": false, "bind": {"input": "checkbox"}},
     {"name": "showrealdata", "value": true, "bind": {"input": "checkbox"}},
-    {"name": "showneurons", "value": true, "bind": {"input": "checkbox"}},
     {"name": "showlinks", "value": true, "bind": {"input": "checkbox"}},
     {
       "name": "scale",
@@ -369,7 +369,7 @@
         "update": {
           "stroke": {"value": "#bbb"},
           "strokeWidth": {"value": 0.5},
-          "opacity": {"signal": "showlinks && showneurons ? 1 :0"},
+          "opacity": {"signal": "showlinks ? 1 :0"},
           "x": [
             {"test": "showmap", "field": "source.x", "scale": "xscale-grid"},
             {"field": "s_x", "scale": "xscale"}
@@ -403,7 +403,7 @@
           "opacity": [
             {
               "test": "!showmap",
-              "signal": "showneurons  ? ((!isDefined(selectedNeuron.id) || selectedNeuron.id === datum.id || datum.class !== selectedNeuron.class) ? (datum.stabilized ? 0.5: 1): 0.3) : 0"
+              "signal": "((!isDefined(selectedNeuron.id) || selectedNeuron.id === datum.id || datum.class !== selectedNeuron.class) ? (datum.stabilized ? 0.5: 1): 0.3)"
             }
           ],
           "size": [

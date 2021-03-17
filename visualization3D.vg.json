@@ -2,18 +2,28 @@
   "$schema": "https://vega.github.io/schema/vega/v5.json",
   "width": 700,
   "height": 525,
+  "padding": 5,
   "background": "black",
   "signals": [
     {
-      "name": "center",
+      "name": "size_g",
       "init": "[data('dimensions')[0].dx,data('dimensions')[0].dy,data('dimensions')[0].dz]"
     },
+    {"name": "size_i", "init": "[ext_sl[1],ext_pl[1],ext_sw[1]]"},
     {
       "name": "selectedNeuron",
       "init": "{}",
       "on": [
         {"events": "@neuron:mouseover", "update": "datum"},
         {"events": "@neuron:mouseout", "update": "{}"}
+      ]
+    },
+    {
+      "name": "selectedNeuron_m",
+      "init": "{}",
+      "on": [
+        {"events": "@neuron_m:mouseover", "update": "datum"},
+        {"events": "@neuron_m:mouseout", "update": "{}"}
       ]
     },
     {
@@ -27,14 +37,16 @@
         }
       ]
     },
+    {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
     {
       "name": "neuronscale",
       "init": "min(width,height)/400",
       "bind": {"input": "range", "min": 0.5, "step": 0.1, "max": 2}
     },
-    {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
+    {"name": "showmap", "value": true, "bind": {"input": "checkbox"}},
+    {"name": "showrealdata", "value": true, "bind": {"input": "checkbox"}},
     {"name": "colors", "value": ["#77A7FB", "#E57368", "#FBCB43"]},
-    {"name": "size", "init": "min(width,height)/3"},
+    {"name": "size", "init": "min(width,height)"},
     {
       "name": "angle_HOR",
       "on": [
@@ -153,6 +165,57 @@
       ]
     },
     {
+      "name": "iris",
+      "transform": [
+        {"type": "filter", "expr": "isValid(datum.pw)"},
+        {"type": "extent", "field": "pl", "signal": "ext_pl"},
+        {"type": "extent", "field": "sl", "signal": "ext_sl"},
+        {"type": "extent", "field": "sw", "signal": "ext_sw"},
+        {"type": "formula", "expr": "datum.pl+datum.pw", "as": "x"},
+        {"type": "formula", "expr": "datum.sl+datum.sw", "as": "y"},
+        {"type": "formula", "expr": "scale('id', datum.class)", "as": "class"},
+        {"type": "window", "ops": ["row_number"], "as": ["id"]},
+        {"type": "formula", "expr": "datum.id - 1", "as": "id"}
+      ],
+      "format": {
+        "type": "csv",
+        "parse": {
+          "sl": "number",
+          "sw": "number",
+          "pl": "number",
+          "pw": "number"
+        },
+        "header": ["sl", "sw", "pl", "pw", "class"],
+        "delimiter": ","
+      },
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/iris.data?token=ASL2ZNOGTZAUZICCRCTQLJ3AKRZX6"
+    },
+    {
+      "name": "iris_p",
+      "source": "iris",
+      "transform": [
+        {
+          "type": "formula",
+          "expr": "{x:datum.sl -size_i[0]/2, y: datum.pl- size_i[1]/2, z:datum.sw-size_i[2]/2 , w:0}",
+          "as": "qp"
+        },
+        {
+          "type": "formula",
+          "expr": "{x:q.w * datum.qp.x + q.y*datum.qp.z- q.z * datum.qp.y, y:q.w * datum.qp.y - q.x * datum.qp.z  + q.z*datum.qp.x, z:q.w * datum.qp.z  + q.x*datum.qp.y - q.y * datum.qp.x, w: -q.x * datum.qp.x - q.y * datum.qp.y - q.z * datum.qp.z }",
+          "as": "q1"
+        },
+        {
+          "type": "formula",
+          "expr": "{x:datum.q1.w * q_1.x + datum.q1.x * q_1.w + datum.q1.y * q_1.z - datum.q1.z * q_1.y, y:datum.q1.w * q_1.y - datum.q1.x * q_1.z + datum.q1.y * q_1.w + datum.q1.z * q_1.x}",
+          "as": "q2"
+        },
+        {"type": "formula", "expr": "2*(datum.q2.x)/size_i[0]", "as": "px"},
+        {"type": "formula", "expr": "2*(datum.q2.y)/size_i[1]", "as": "py"},
+        {"type": "extent", "field": "px", "signal": "ext_px"},
+        {"type": "extent", "field": "py", "signal": "ext_py"}
+      ]
+    },
+    {
       "name": "neurons",
       "format": {
         "type": "dsv",
@@ -217,7 +280,7 @@
       "transform": [
         {
           "type": "formula",
-          "expr": "{x:datum.x -center[0]/2, y: datum.y- center[1]/2, z:datum.z-center[2]/2.0 , w:0}",
+          "expr": "{x:datum.x -size_g[0]/2, y: datum.y- size_g[1]/2, z:datum.z-size_g[2]/2.0 , w:0}",
           "as": "qp"
         },
         {
@@ -230,8 +293,53 @@
           "expr": "{x:datum.q1.w * q_1.x + datum.q1.x * q_1.w + datum.q1.y * q_1.z - datum.q1.z * q_1.y, y:datum.q1.w * q_1.y - datum.q1.x * q_1.z + datum.q1.y * q_1.w + datum.q1.z * q_1.x}",
           "as": "q2"
         },
-        {"type": "formula", "expr": "(datum.q2.x)", "as": "px"},
-        {"type": "formula", "expr": "(datum.q2.y)", "as": "py"}
+        {"type": "formula", "expr": "(datum.q2.x)/size_g[0]", "as": "px"},
+        {"type": "formula", "expr": "(datum.q2.y)/size_g[1]", "as": "py"}
+      ]
+    },
+    {
+      "name": "projection_n",
+      "source": "neurons",
+      "transform": [
+        {
+          "type": "formula",
+          "expr": "{x:datum.vector[0] -size_i[0]/2, y: datum.vector[2]- size_i[1]/2, z:datum.vector[1]-size_i[2]/2.0 , w:0}",
+          "as": "qp"
+        },
+        {
+          "type": "formula",
+          "expr": "{x:q.w * datum.qp.x + q.y*datum.qp.z- q.z * datum.qp.y, y:q.w * datum.qp.y - q.x * datum.qp.z  + q.z*datum.qp.x, z:q.w * datum.qp.z  + q.x*datum.qp.y - q.y * datum.qp.x, w: -q.x * datum.qp.x - q.y * datum.qp.y - q.z * datum.qp.z }",
+          "as": "q1"
+        },
+        {
+          "type": "formula",
+          "expr": "{x:datum.q1.w * q_1.x + datum.q1.x * q_1.w + datum.q1.y * q_1.z - datum.q1.z * q_1.y, y:datum.q1.w * q_1.y - datum.q1.x * q_1.z + datum.q1.y * q_1.w + datum.q1.z * q_1.x}",
+          "as": "q2"
+        },
+        {"type": "formula", "expr": "2*(datum.q2.x)/size_i[0]", "as": "px"},
+        {"type": "formula", "expr": "2*(datum.q2.y)/size_i[1]", "as": "py"}
+      ]
+    },
+    {
+      "name": "entries",
+      "source": "neurons",
+      "transform": [
+        {"type": "filter", "expr": "datum.id === selectedNeuron.id"},
+        {"type": "project", "fields": ["entries"]},
+        {
+          "type": "formula",
+          "expr": "split(replace(replace(datum.entries, '[',''),']',''),',')",
+          "as": "entries"
+        },
+        {"type": "flatten", "fields": ["entries"]},
+        {"type": "formula", "expr": "toNumber(datum.entries)", "as": "entries"},
+        {
+          "type": "lookup",
+          "from": "iris_p",
+          "key": "id",
+          "fields": ["entries"],
+          "values": ["px", "py"]
+        }
       ]
     },
     {
@@ -272,16 +380,16 @@
           "from": "neurons",
           "key": "id",
           "fields": ["s_id"],
-          "values": ["x", "y", "z"],
-          "as": ["s_x", "s_y", "s_z"]
+          "values": ["x", "y", "z", "vector"],
+          "as": ["s_x", "s_y", "s_z", "s_v"]
         },
         {
           "type": "lookup",
           "from": "neurons",
           "key": "id",
           "fields": ["target"],
-          "values": ["x", "y", "z", "neuron"],
-          "as": ["t_x", "t_y", "t_z", "target"]
+          "values": ["x", "y", "z", "neuron", "vector"],
+          "as": ["t_x", "t_y", "t_z", "target", "t_v"]
         }
       ]
     },
@@ -291,7 +399,7 @@
       "transform": [
         {
           "type": "formula",
-          "expr": "[{x:datum.s_x - center[0]/2, y: datum.s_y- center[1]/2, z:datum.s_z-center[2]/2, w:0},{x:datum.t_x-center[0]/2, y: datum.t_y-center[1]/2, z:datum.t_z-center[2]/2, w:0}]",
+          "expr": "[{x:datum.s_x - size_g[0]/2, y: datum.s_y- size_g[1]/2, z:datum.s_z-size_g[2]/2, w:0},{x:datum.t_x-size_g[0]/2, y: datum.t_y-size_g[1]/2, z:datum.t_z-size_g[2]/2, w:0}]",
           "as": "qp"
         },
         {
@@ -304,10 +412,35 @@
           "expr": "[{x:datum.q1[0].w * q_1.x + datum.q1[0].x * q_1.w + datum.q1[0].y * q_1.z - datum.q1[0].z * q_1.y, y:datum.q1[0].w * q_1.y - datum.q1[0].x * q_1.z + datum.q1[0].y * q_1.w + datum.q1[0].z * q_1.x},{x:datum.q1[1].w * q_1.x + datum.q1[1].x * q_1.w + datum.q1[1].y * q_1.z - datum.q1[1].z * q_1.y, y:datum.q1[1].w * q_1.y - datum.q1[1].x * q_1.z + datum.q1[1].y * q_1.w + datum.q1[1].z * q_1.x}]",
           "as": "q2"
         },
-        {"type": "formula", "expr": "(datum.q2[0].x)", "as": "psx"},
-        {"type": "formula", "expr": "(datum.q2[0].y)", "as": "psy"},
-        {"type": "formula", "expr": "(datum.q2[1].x)", "as": "ptx"},
-        {"type": "formula", "expr": "(datum.q2[1].y)", "as": "pty"}
+        {"type": "formula", "expr": "(datum.q2[0].x)/size_g[0]", "as": "psx"},
+        {"type": "formula", "expr": "(datum.q2[0].y)/size_g[1]", "as": "psy"},
+        {"type": "formula", "expr": "(datum.q2[1].x)/size_g[0]", "as": "ptx"},
+        {"type": "formula", "expr": "(datum.q2[1].y)/size_g[1]", "as": "pty"}
+      ]
+    },
+    {
+      "name": "projection_ln",
+      "source": "links",
+      "transform": [
+        {
+          "type": "formula",
+          "expr": "[{x:datum.s_v[0] - size_i[0]/2, y: datum.s_v[2]- size_i[1]/2, z:datum.s_v[1]-size_i[2]/2, w:0},{x:datum.t_v[0]-size_i[0]/2, y: datum.t_v[2]-size_i[1]/2, z:datum.t_v[1]-size_i[2]/2, w:0}]",
+          "as": "qp"
+        },
+        {
+          "type": "formula",
+          "expr": "[{x:q.w * datum.qp[0].x + q.y*datum.qp[0].z- q.z * datum.qp[0].y, y:q.w * datum.qp[0].y - q.x * datum.qp[0].z  + q.z*datum.qp[0].x, z:q.w * datum.qp[0].z  + q.x*datum.qp[0].y - q.y * datum.qp[0].x, w: -q.x * datum.qp[0].x - q.y * datum.qp[0].y - q.z * datum.qp[0].z },{x:q.w * datum.qp[1].x + q.y*datum.qp[1].z- q.z * datum.qp[1].y, y:q.w * datum.qp[1].y - q.x * datum.qp[1].z  + q.z*datum.qp[1].x, z:q.w * datum.qp[1].z  + q.x*datum.qp[1].y - q.y * datum.qp[1].x, w: -q.x * datum.qp[1].x - q.y * datum.qp[1].y - q.z * datum.qp[1].z }]",
+          "as": "q1"
+        },
+        {
+          "type": "formula",
+          "expr": "[{x:datum.q1[0].w * q_1.x + datum.q1[0].x * q_1.w + datum.q1[0].y * q_1.z - datum.q1[0].z * q_1.y, y:datum.q1[0].w * q_1.y - datum.q1[0].x * q_1.z + datum.q1[0].y * q_1.w + datum.q1[0].z * q_1.x},{x:datum.q1[1].w * q_1.x + datum.q1[1].x * q_1.w + datum.q1[1].y * q_1.z - datum.q1[1].z * q_1.y, y:datum.q1[1].w * q_1.y - datum.q1[1].x * q_1.z + datum.q1[1].y * q_1.w + datum.q1[1].z * q_1.x}]",
+          "as": "q2"
+        },
+        {"type": "formula", "expr": "2*(datum.q2[0].x)/size_i[0]", "as": "psx"},
+        {"type": "formula", "expr": "2*(datum.q2[0].y)/size_i[1]", "as": "psy"},
+        {"type": "formula", "expr": "2*(datum.q2[1].x)/size_i[0]", "as": "ptx"},
+        {"type": "formula", "expr": "2*(datum.q2[1].y)/size_i[1]", "as": "pty"}
       ]
     }
   ],
@@ -333,7 +466,7 @@
     {
       "name": "color",
       "type": "ordinal",
-      "domain": {"data": "labels", "field": "id", "sort": true},
+      "domain": {"data": "labels", "field": "id"},
       "range": ["#555", "red", "yellow", "blue"]
     },
     {
@@ -341,6 +474,12 @@
       "type": "linear",
       "domain": {"signal": "scores"},
       "range": [{"signal": "50*neuronscale"}, {"signal": "300*neuronscale"}]
+    },
+    {
+      "name": "id",
+      "type": "ordinal",
+      "domain": {"data": "labels", "field": "name"},
+      "range": {"data": "labels", "field": "id"}
     },
     {
       "name": "label",
@@ -366,11 +505,39 @@
       }
     },
     {
+      "type": "symbol",
+      "from": {"data": "iris_p"},
+      "encode": {
+        "update": {
+          "opacity": {"signal": "showmap || !showrealdata ? 0:0.6"},
+          "size": {"value": 30, "mult": {"signal": "neuronscale"}},
+          "fill": [{"field": "class", "scale": "color"}],
+          "xc": [{"field": "px", "scale": "xscale"}],
+          "yc": [{"field": "py", "scale": "yscale"}]
+        }
+      }
+    },
+    {
+      "type": "symbol",
+      "from": {"data": "entries"},
+      "encode": {
+        "enter": {"stroke": {"value": "#555"}},
+        "update": {
+          "size": {"value": 30, "mult": {"signal": "neuronscale"}},
+          "opacity": {"signal": "showrealdata && !showmap ? 1 : 0"},
+          "fill": {"value": "white"},
+          "xc": {"field": "px", "scale": "xscale"},
+          "yc": {"field": "py", "scale": "yscale"}
+        }
+      }
+    },
+    {
       "type": "rule",
-      "from": {"data": "projection_l"},
+      "from": {"data": "projection_ln"},
       "encode": {
         "enter": {"stroke": {"value": "#bbb"}, "strokeWidth": {"value": 0.5}},
         "update": {
+          "opacity": {"signal": "showmap? 0 :1"},
           "x": {"field": "psx", "scale": "xscale"},
           "y": {"field": "psy", "scale": "yscale"},
           "x2": {"field": "ptx", "scale": "xscale"},
@@ -381,23 +548,23 @@
     {
       "type": "symbol",
       "name": "neuron",
-      "from": {"data": "projection"},
+      "from": {"data": "projection_n"},
       "encode": {
-        "enter": {"stroke": {"field": "secondary", "scale": "color"}},
         "update": {
-          "opacity": {"signal": "datum.stabilized ? 0.5:1"},
-          "tooltip": {
-            "signal": "{'score max':datum.score1, 'score 2': datum.score2,'coords':'['+datum.x+','+datum.y+','+datum.z+']'}"
-          },
+          "stroke": {"field": "secondary", "scale": "color"},
           "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
-          "size": [
-            {
-              "field": "score",
-              "scale": "score",
-              "mult": {"signal": "4*scale*neuronscale"}
-            }
+          "opacity": {
+            "signal": "showmap ? 0:((!isDefined(selectedNeuron.id) || selectedNeuron.id === datum.id || datum.class !== selectedNeuron.class) ? (datum.stabilized ? 0.5: 1): 0.3)"
+          },
+          "size": {
+            "field": "score",
+            "scale": "score",
+            "mult": {"signal": "2*scale"}
+          },
+          "fill": [
+            {"test": "selectedNeuron.id == datum.id", "value": "white"},
+            {"field": "class", "scale": "color"}
           ],
-          "fill": [{"field": "class", "scale": "color"}],
           "xc": [{"field": "px", "scale": "xscale"}],
           "yc": [{"field": "py", "scale": "yscale"}]
         }
@@ -416,7 +583,70 @@
         "update": {
           "xc": {"field": "bounds.x1", "offset": {"signal": "-min(4,3*scale)"}},
           "yc": {"field": "yc"},
-          "opacity": {"signal": "datum.datum.id === selectedNeuron.id ? 1 :0"}
+          "opacity": {
+            "signal": "!showmap && datum.datum.id === selectedNeuron.id ? 1 :0"
+          }
+        }
+      }
+    },
+    {
+      "type": "rule",
+      "from": {"data": "projection_l"},
+      "encode": {
+        "enter": {"stroke": {"value": "#bbb"}, "strokeWidth": {"value": 0.5}},
+        "update": {
+          "opacity": {"signal": "showmap? 1 :0"},
+          "x": {"field": "psx", "scale": "xscale"},
+          "y": {"field": "psy", "scale": "yscale"},
+          "x2": {"field": "ptx", "scale": "xscale"},
+          "y2": {"field": "pty", "scale": "yscale"}
+        }
+      }
+    },
+    {
+      "type": "symbol",
+      "name": "neuron_m",
+      "from": {"data": "projection"},
+      "encode": {
+        "update": {
+          "stroke": {"field": "secondary", "scale": "color"},
+          "opacity": {"signal": "showmap ? 1:0"},
+          "tooltip": [
+            {
+              "test": "showmap",
+              "signal": "{'score max':datum.score1, 'score 2': datum.score2,'coords':'['+datum.x+','+datum.y+','+datum.z+']'}"
+            }
+          ],
+          "strokeWidth": {"signal": "datum.secondary >-1 ? 3:1"},
+          "size": [
+            {
+              "field": "score",
+              "scale": "score",
+              "mult": {"signal": "4*scale*neuronscale"}
+            }
+          ],
+          "fill": {"field": "class", "scale": "color"},
+          "xc": {"field": "px", "scale": "xscale"},
+          "yc": {"field": "py", "scale": "yscale"}
+        }
+      }
+    },
+    {
+      "type": "text",
+      "from": {"data": "neuron_m"},
+      "encode": {
+        "enter": {
+          "fill": {"value": "white"},
+          "text": {"field": "datum.score"},
+          "baseline": {"value": "bottom"},
+          "align": {"value": "right"}
+        },
+        "update": {
+          "xc": {"field": "bounds.x1", "offset": {"signal": "-min(4,3*scale)"}},
+          "yc": {"field": "yc"},
+          "opacity": {
+            "signal": "showmap && datum.datum.id === selectedNeuron_m.id ? 1 :0"
+          }
         }
       }
     }

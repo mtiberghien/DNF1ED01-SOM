@@ -2,11 +2,12 @@
   "$schema": "https://vega.github.io/schema/vega/v5.json",
   "width": 700,
   "height": 525,
+  "padding":5,
   "background": "black",
   "signals": [
     {
       "name": "current_step",
-      "value": 0,
+      "value": -1,
       "bind": {"input": "range", "min": 0, "max": 1500, "step": 1},
       "on": [
         {
