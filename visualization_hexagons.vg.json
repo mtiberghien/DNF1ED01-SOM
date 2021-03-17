@@ -7,8 +7,15 @@
     {
       "name": "current_step",
       "value": 0,
-      "bind": {"input": "range", "min": 0, "max": 1500, "step": 1}
+      "bind": {"input": "range", "min": 0, "max": 1500, "step": 1},
+      "on": [
+        {
+          "events": "timer{100}",
+          "update": "autoplay ? (current_step >= steps[1] ? -1 :current_step + 1 ): current_step"
+        }
+      ]
     },
+    {"name": "autoplay", "value": false, "bind": {"input": "checkbox"}},
     {"name": "rows", "init": "y_extent[1]+1"},
     {"name": "columns", "init": "x_extent[1]+1"},
     {
