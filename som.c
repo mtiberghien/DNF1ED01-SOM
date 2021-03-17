@@ -1592,6 +1592,10 @@ void readSom(FILE* fp, somNeuron* n, int p)
     {
         free(ptr);
     }
+    if(line)
+    {
+        free(line);
+    }
 }
 
 void* readSom1D(FILE* fp, somConfig* config)
@@ -1661,6 +1665,10 @@ void* loadSom(char* filename, somConfig* config)
     void* weights = readfp(fp, config);
 
     fclose(fp);
+    if(line)
+    {
+        free(line);
+    }
     return weights;
 }
 

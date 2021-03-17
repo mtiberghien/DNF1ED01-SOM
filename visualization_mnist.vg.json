@@ -36,7 +36,6 @@
           "score": "number",
           "secondary": "number",
           "class": "number",
-          "stabilized": "number",
           "score1": "number",
           "score2": "number"
         },
@@ -49,13 +48,12 @@
           "score",
           "class",
           "secondary",
-          "stabilized",
           "score1",
           "score2",
           "entries"
         ]
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/5fa401173adaa40ae136de7f1040070ddbe48d89/som_mnist.data?token=ASL2ZNOWTHEJEK3JHQG24GDALMTGI",
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som_mnist.data?token=ASL2ZNMI7EVPG7TZN4LTI4DALN2NG",
       "transform": [
         {"type": "filter", "expr": "datum.step == 0"},
         {

@@ -21,7 +21,6 @@ void printTaskDuration(time_t begin, time_t end)
 void testIris()
 {
     somConfig *config = getsomDefaultConfig();
-    config->normalize=1;
     config->alpha=0.05;
     config->epochs = 2000;
     void* weights;
@@ -31,11 +30,6 @@ void testIris()
     for (int i = oneD; i <=threeD;i++)
     {
         config->dimension = i;
-        if(i==twoD)
-        {
-            config->map_r=10;
-            config->map_c=10;
-        }
         weights = getTrainedSom(data, config,boundaries, 0);
         somScoreResult* result = getscore(data, weights, config, 1, 1);
         displayConfig(config);

@@ -228,7 +228,6 @@
           "score": "number",
           "secondary": "number",
           "class": "number",
-          "stabilized": "number",
           "score1": "number",
           "score2": "number"
         },
@@ -241,7 +240,6 @@
           "score",
           "class",
           "secondary",
-          "stabilized",
           "score1",
           "score2",
           "entries"

@@ -92,8 +92,7 @@
           "score1": "number",
           "score2": "number",
           "secondary": "number",
-          "class": "number",
-          "stabilized": "number"
+          "class": "number"
         },
         "header": [
           "vector",
@@ -104,13 +103,12 @@
           "score",
           "class",
           "secondary",
-          "stabilized",
           "score1",
           "score2",
           "entries"
         ]
       },
-      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNMAPKD75AG3XHXTRNLALB3XS",
+      "url": "https://raw.githubusercontent.com/mtiberghien/DNF1ED01-SOM/master/som2D.data?token=ASL2ZNOXHLYZY3SIT6AFKPDALNZHW",
       "transform": [
         {"type": "extent", "signal": "steps", "field": "step"},
         {"type": "extent", "signal": "scores", "field": "score"},

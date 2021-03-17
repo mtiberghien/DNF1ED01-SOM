@@ -2,7 +2,7 @@
   "$schema": "https://vega.github.io/schema/vega/v5.json",
   "width": 700,
   "height": 525,
-  "padding":5,
+  "padding": 5,
   "background": "black",
   "signals": [
     {
@@ -91,7 +91,6 @@
           "score": "number",
           "secondary": "number",
           "class": "number",
-          "stabilized": "number",
           "score1": "number",
           "score2": "number"
         },
@@ -104,7 +103,6 @@
           "score",
           "class",
           "secondary",
-          "stabilized",
           "score1",
           "score2",
           "entries"
