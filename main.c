@@ -91,10 +91,10 @@ void testMNIST_train()
     time_t begin = time(NULL);
     printf("Reading data: ");
     fflush(stdout);
-    dataVector *data = getMNISTData(config, raw_limit,0);
+    dataVector *data_raw = getMNISTData(config, raw_limit,0);
     raw_limit = config->n;
     printf("Done (%d lines read)\n", config->n);
-    /* printf("Creating Sample: ");
+    printf("Creating Sample: ");
     fflush(stdout);
     dataVector data[sample_limit];
     int proposed[config->n];
@@ -110,15 +110,15 @@ void testMNIST_train()
         proposed[index]=--n;
     }
     printf("Created Sample with %d lines among %d\n", sample_limit, config->n);
-    config->n=sample_limit; */
+    config->n=sample_limit;
     printf("Calculating boundaries: ");
     fflush(stdout);
     dataBoundary boundaries[config->p];
     calculateBoundaries(data, boundaries, config); 
     printf("Done\n");                                                    
     config->alpha=0.05;
-    config->map_r=120;
-    config->map_c=120;
+    config->map_r=40;
+    config->map_c=40;
     weights = getTrainedSom(data, config,boundaries, 0);
     somScoreResult* result = getscore(data, weights, config, 1, 1);   
     displayConfig(config);
@@ -132,7 +132,7 @@ void testMNIST_train()
     clear_mem(weights, result, config);
         
     config->n=raw_limit;
-    clear_data(data, config);
+    clear_data(data_raw, config);
     clear_config(config);
     time_t end = time(NULL);
     printTaskDuration(begin,end);

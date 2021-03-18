@@ -845,7 +845,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
     }
     if(!silent)
     {
-        printf("Calculating  %dD SOM for %d entries and %d parameters :", config->dimension, config->n, config->p);
+        printf("Calculating  %dD SOM for %d neurons with %d entries and %d parameters :", config->dimension, config->nw, config->n, config->p);
         fflush(stdout);
     }
     long epoch = 0;
