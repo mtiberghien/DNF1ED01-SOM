@@ -214,6 +214,6 @@ void testParkinson()
 
 int main()
 {
-    testMNIST_train();
+    testMNIST_test();
 
 }

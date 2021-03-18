@@ -7,7 +7,7 @@ dataVector* getMNISTData(somConfig *config, int limit, short test)
 {
      FILE * fp;
     char * line = NULL;
-    char* filename = test ? "../../datasets/mnist_test.csv":"../../datasets/mnist_train.csv";
+    char* filename = test ? "../../datasets/MNIST/mnist_test.csv":"../../datasets/MNIST/mnist_train.csv";
     size_t len = 0;
     ssize_t read;
     dataVector * data = (dataVector*)malloc(sizeof(dataVector));
