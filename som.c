@@ -19,7 +19,7 @@ somConfig* getsomDefaultConfig(){
     config->alpha = 0.01;
     config->initialPercentCoverage = 0.6;
     config->distribution = usingMeans;
-    config->nbFactorRadius1 = 0.5;
+    config->nbFactorRadius1 = 0.7;
 }
 
 //Get a different file name according to each dimension (visualization purpose)

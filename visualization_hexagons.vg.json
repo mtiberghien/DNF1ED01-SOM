@@ -308,7 +308,7 @@
     },
     {
       "name": "g-color",
-      "domain": {"data": "umatrix", "field": "d"},
+      "domain": [0,1],
       "range": {"scheme": {"signal": "umatrixScheme"}},
       "reverse": {"signal": "umatrixInverted"}
     },
