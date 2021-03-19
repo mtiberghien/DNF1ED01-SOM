@@ -8,6 +8,7 @@
 #include "include/common.h"
 #include <time.h>
 
+//Display a duration in hours minutes and seconds using provided begin end end time structures
 void printTaskDuration(time_t begin, time_t end)
 {
     long dif = (long)difftime(end,begin);
@@ -17,7 +18,7 @@ void printTaskDuration(time_t begin, time_t end)
 
     printf("Task accomplished in %d hour(s), %d minute(s) %d seconde(s).\n", hours,  minutes, seconds);
 }
-
+//Test iris.data file with SOM using the three dimensions. The trained matrix is displayed
 void testIris()
 {
     somConfig *config = getsomDefaultConfig();
@@ -41,7 +42,7 @@ void testIris()
     clear_data(data, config);
     clear_config(config);    
 }
-
+//Display a MNIST neuron as a 28x28 bitmap each pixel has a value from 0 to 255
 void displayMNISTNeuron(somScore** scores, somNeuron** weights, somConfig* config, int class)
 {
     int maxi =-1;
@@ -79,15 +80,16 @@ void displayMNISTNeuron(somScore** scores, somNeuron** weights, somConfig* confi
         
     }
 }
-
+//Train MNIST dataset
 void testMNIST_train()
 {
     char* filename = "trained_som.txt";
     somConfig *config = getsomDefaultConfig();
+    config->alpha=0.05;
     void* weights;
     config->normalize=1;
     int raw_limit = -1;
-    int sample_limit = 500;
+    int sample_limit = 3000;
     time_t begin = time(NULL);
     printf("Reading data: ");
     fflush(stdout);
@@ -116,9 +118,8 @@ void testMNIST_train()
     dataBoundary boundaries[config->p];
     calculateBoundaries(data, boundaries, config); 
     printf("Done\n");                                                    
-    config->alpha=0.05;
-    config->map_r=40;
-    config->map_c=40;
+    config->map_r=25;
+    config->map_c=25;
     weights = getTrainedSom(data, config,boundaries, 0);
     somScoreResult* result = getscore(data, weights, config, 1, 1);   
     displayConfig(config);
@@ -137,8 +138,8 @@ void testMNIST_train()
     time_t end = time(NULL);
     printTaskDuration(begin,end);
 }
-
-void testMNIST_test()
+//Use a MNIST test data set (not used in training) to validate trained weights (serialize in testMNIST_train())
+double testMNIST_test()
 {
     time_t begin = time(NULL);
     char* filename = "trained_som.txt";
@@ -170,30 +171,33 @@ void testMNIST_test()
     }
     printf("Created Sample with %d lines among %d\n", sample_limit, config->n);
     config->n=sample_limit;
-    somScoreResult* result = getscore(data, weights, config,0, 0);
+    somPrediction* predictions = predict(data, weights, config,0);
     
     int success = 0;
-    somScore** scores = (somScore**)result->scores;
     for(int i=0;i<sample_limit; i++)
     {
-        somNeuron winner = *data[i].lastWinner;
-        if(data[i].class == scores[winner.r][winner.c].maxClass)
+        if(data[i].class == predictions[i].class)
         {
             success++;
+        }
+        else
+        {
+            printf("Failed prediction for %d: %d was predicted with a confidence of %.2f%%\n", data[i].class, predictions[i].class, 100*predictions[i].confidence);
         }
     }
 
     printf("Tested %d data with a success rate of %.2f%%\n", sample_limit, 100*(double)success/sample_limit);
 
-    clear_mem(weights, result, config);
-        
+    clear_mem(weights, NULL, config);
+    free(predictions);
     config->n=raw_limit;
     clear_data(data_raw, config);
     clear_config(config);
     time_t end = time(NULL);
-    printTaskDuration(begin, end);   
+    printTaskDuration(begin, end);  
+    return 100*(double)success/sample_limit;
 }
-
+//Test parkinsons.data file
 void testParkinson()
 {
     somConfig *config = getsomDefaultConfig();
@@ -214,6 +218,6 @@ void testParkinson()
 
 int main()
 {
-    testMNIST_test();
-
+    testMNIST_train();
+    testMNIST_test();    
 }

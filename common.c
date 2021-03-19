@@ -11,7 +11,7 @@ double min(double x, double y)
 double max(double x, double y){
     return y > x ? y : x;
 }
-
+//Norm calculation for a vector v of p parameters
 double getNorm(double*v, int p)
 {
     double norm=0;

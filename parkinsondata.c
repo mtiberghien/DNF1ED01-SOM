@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "include/common.h"
 
+//Read parkinsons.data dataset
 dataVector* getParkinsonsData(somConfig *config)
 {
     FILE * fp;

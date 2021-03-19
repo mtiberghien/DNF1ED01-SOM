@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "include/common.h"
 
+//Read MNIST DATA using training dataset or test dataset (when test = 1)
 dataVector* getMNISTData(somConfig *config, int limit, short test)
 {
      FILE * fp;

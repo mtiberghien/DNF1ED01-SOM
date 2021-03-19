@@ -19,7 +19,6 @@ somConfig* getsomDefaultConfig(){
     config->alpha = 0.01;
     config->initialPercentCoverage = 0.6;
     config->distribution = usingMeans;
-    config->nbFactorRadius1 = 0.7;
 }
 
 //Get a different file name according to each dimension (visualization purpose)
@@ -50,7 +49,7 @@ double getRandomUsingMean(dataBoundary boundary)
 {
     return (((double)rand()/RAND_MAX)*(boundary.max - boundary.min)) + boundary.mean;
 }
-
+//Return a random value between a min and a max
 double getRandomUsingMinMax(dataBoundary boundary)
 {
     return (((double)rand()/RAND_MAX)*(boundary.max - boundary.min)) + boundary.min;
@@ -251,7 +250,7 @@ void findWinner2D(dataVector* v,void* weights, somConfig* config)
     v->lastWinner = result;
 }
 
-//Get the closest neuron for from 2D SOM
+//Get the closest neuron for from 3D SOM
 void findWinner3D(dataVector* v,void* weights, somConfig* config)
 {
     somNeuron*** som = (somNeuron***)weights;
@@ -395,6 +394,7 @@ void getNeighbours3D(somNeuron* n, void* weights, somConfig* config)
 #pragma endregion
 
 #pragma region Update Section
+//Return exp(- distance/2*sigma²)
 double gaussian_function(double distance, double sigma)
 {
     return exp(-distance/2*(sigma*sigma));
@@ -688,33 +688,37 @@ void clear_mem(void* weights, somScoreResult* score, somConfig* config)
 }
 
 #pragma endregion
+//Get 1D node distance between node at 0 and node at i (farest node at radius i)
 double getDistance1D(int i)
 {
     double n1[]={0};
     double n2[]={i};
     return distance_function(n1, n2, 1);
 }
-
+//Get 2D node distance between node at [0,0] and node at [i,i] (farest node at radius i)
 double getDistance2D(int i)
 {
     double n1[]={0,0};
     double n2[]={i,i};
     return distance_function(n1, n2, 2);
 }
-
+//Get 3D node distance between node at [0,0,à] and node at [i,i,i] (farest node at radius i)
 double getDistance3D(int i)
 {
     double n1[]={0,0,0};
     double n2[]={i,i,i};
     return distance_function(n1, n2, 3);
 }
+//Calculate Initial Sigma using 0.9 factor when radius is 1.
+//This means that that the neighbourhood function return 0.9 for the farest node (diagonal) when radius is 1
+//Sigma will decrease exponentially during the training
 double getInitialSigma(somConfig* config, double(*getdistfp)(int))
 {
     double dist = getdistfp(1);
-    double sigma = sqrt(-dist/2*log(0.8));
+    double sigma = sqrt(-dist/2*log(0.9));
     return sigma;
 }
-
+//Initialize weights using config and databoundaries. If silent is not 0 will log to the standard output
 void* init(dataVector* data, somConfig* config, dataBoundary* boundaries, short silent)
 {
     if(!config->nw){
@@ -759,13 +763,50 @@ void* init(dataVector* data, somConfig* config, dataBoundary* boundaries, short 
     }
     void* weights = initfp(data, config, boundaries, getrandomfp);
     config->sigma = getInitialSigma(config, getdistfp);
+
     if(!silent)
     {
         printf("%s\n", "Done");
     }
     return weights;
 }
-
+//Predict classes for test data using trained labelled trained weights
+somPrediction* predict(dataVector* data, void* weights, somConfig* config, short silent)
+{
+    void (*findwnfp)(dataVector*, void*, somConfig*);
+    switch(config->dimension)
+    {
+        case oneD: findwnfp = findWinner1D; break;
+        case threeD: findwnfp = findWinner3D; break;
+        default: findwnfp = findWinner2D; break;
+    }
+    int n = config->n;
+    somPrediction* predictions = (somPrediction*)malloc(n*sizeof(somPrediction));
+    if(!silent)
+    {
+        printf("Calculating predictions: ");
+        fflush(stdout);
+    }
+    for(int i=0;i<n;i++)
+    {
+        if(!silent)
+        {
+            printf("%6.2f%%\033[7D", (double)i*100/n);
+            fflush(stdout);
+        }
+        dataVector* v = &data[i];
+        somPrediction* p = &predictions[i];
+        findwnfp(v, weights, config);
+        p->class = v->lastWinner->class;
+        p->confidence = v->lastWinner->confidence;
+    }
+    if(!silent)
+    {
+        printf("%7s\033[7D%s\n", "","Done");
+    }
+    return predictions;
+}
+//Train weights using data and som settings
 void fit(dataVector* data, void* weights, somConfig* config, short silent)
 {
     void (*learnfp)(int, dataVector*, void*, somConfig*, void (*)(dataVector*,void*,somConfig*));
@@ -803,7 +844,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
         break;
     }
     somConfig cfg = *config;
-    double tau = cfg.epochs/log(cfg.sigma);
+    double tauSigma = cfg.epochs/log(cfg.sigma);
     int vectorsToPropose[cfg.n];
     if(config->nw == 0)
     {
@@ -850,7 +891,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
     }
     long epoch = 0;
     int currentRadius = cfg.radius;
-    double tau2 = cfg.epochs/log(currentRadius);
+    double tau = cfg.epochs/log(currentRadius);
     findwnfp = find_winner_fromNeighbours;
 #ifdef TRACE_SOM
     long time = 0;
@@ -866,6 +907,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
                 fflush(stdout);
             }
             cfg.alpha = config->alpha*exp(-(double)epoch/cfg.epochs);
+            cfg.sigma = config->sigma*exp(-(double)epoch/tauSigma);
             int ivector = ((double)rand()/RAND_MAX)*i;
             int proposed = vectorsToPropose[ivector];
             learnfp(proposed,  &data[proposed], weights, &cfg, findwnfp);
@@ -886,7 +928,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
             }
 
         }
-        currentRadius = (int)(config->radius*exp(-epoch/tau2));
+        currentRadius = (int)(config->radius*exp(-epoch/tau));
         if(currentRadius<cfg.radius)
         {
             cfg.radius = currentRadius;
@@ -991,7 +1033,7 @@ void updateScore(somScore* s, int class, int entry)
     s->entries = realloc(s->entries, (s->totalEntries+1)*sizeof(int));
 }
 //Retrieve the status, the best matching class and the second best
-void updateScoreStats(somScore* s, int nClasses, somScoreResult* scoreResult)
+void updateScoreStats(somNeuron* n, somScore* s, int nClasses, somScoreResult* scoreResult)
 {
     s->maxClass = s->secondClass = -1;
     s->status = getScoreStatus(s->scores, nClasses);
@@ -1005,7 +1047,14 @@ void updateScoreStats(somScore* s, int nClasses, somScoreResult* scoreResult)
             s->secondClass = argMax(s->scores, nClasses, s->maxClass);
             s->secondClasstotalEntries = s->scores[s->secondClass];
         }
-        
+        n->class = s->maxClass;
+        n->confidence = (double)s->maxClasstotalEntries/s->totalEntries;
+        scoreResult->confidence+=n->confidence;
+    }
+    else
+    {
+        n->class = -1;
+        n->confidence = 1;
     }
 }
 //Retrieve scores for 1D SOM neurons
@@ -1013,7 +1062,6 @@ void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult*
 {
     somScore* score = (somScore*)malloc(sizeof(somScore) * config->map_c);
     somNeuron* som = (somNeuron*)weights;
-    scoreResult->nActivatedNodes=0;
     int nClasses = scoreResult->nClasses;
     if(!silent)
     {
@@ -1051,7 +1099,7 @@ void score1D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     }
     for(int i=0;i<config->map_c;i++)
     {
-        updateScoreStats(&score[i], nClasses, scoreResult);
+        updateScoreStats(&som[i],&score[i], nClasses, scoreResult);
     }
     if(!silent)
     {
@@ -1064,7 +1112,6 @@ void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult*
 {
     somScore** score = (somScore**)malloc(sizeof(somScore*) * config->map_r);
     somNeuron** som = (somNeuron**)weights;
-    scoreResult->nActivatedNodes=0;
     int nClasses = scoreResult->nClasses;
     if(!silent)
     {
@@ -1107,7 +1154,7 @@ void score2D(dataVector* data, void* weights, somConfig* config, somScoreResult*
     {
         for(int j=0;j<config->map_c;j++)
         {
-            updateScoreStats(&score[i][j], nClasses, scoreResult);
+            updateScoreStats(&som[i][j], &score[i][j], nClasses, scoreResult);
         }
         
     }
@@ -1122,7 +1169,6 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
 {
     somScore*** score = (somScore***)malloc(sizeof(somScore**) * config->map_b);
     somNeuron*** som = (somNeuron***)weights;
-    scoreResult->nActivatedNodes=0;
     int nClasses = scoreResult->nClasses;
     if(!silent)
     {
@@ -1172,7 +1218,7 @@ void score3D(dataVector* data, void* weights, somConfig* config, somScoreResult*
 
             for(int k=0;k<config->map_c;k++)
             {
-                updateScoreStats(&score[i][j][k],nClasses, scoreResult);
+                updateScoreStats(&som[i][j][k], &score[i][j][k],nClasses, scoreResult);
             }
             
         }
@@ -1193,6 +1239,8 @@ somScoreResult* getscore(dataVector* data, void* weights, somConfig* config, sho
         fflush(stdout);
     }
     somScoreResult* result = malloc(sizeof(somScoreResult));
+    result->nActivatedNodes=0;
+    result->confidence=0;
     void (*scorefp)(dataVector*,  void* , somConfig*, somScoreResult*, void (*)(dataVector*,void*,somConfig*), short);
     void (*findwnfp)(dataVector*,void*,somConfig*);
     switch (config->dimension)
@@ -1213,6 +1261,13 @@ somScoreResult* getscore(dataVector* data, void* weights, somConfig* config, sho
     }
     result->nClasses = getClassesCount(data, config->n);
     scorefp(data, weights, config, result, findwnfp, silent);
+    if(result->nActivatedNodes>0)
+    {
+        //Mean of activated nodes confidence
+        result->confidence/=result->nActivatedNodes;
+        //The mean is weighted by the percentage of activated node
+        result->confidence*=(double)result->nActivatedNodes/config->nw;
+    }
     if(!silent)
     {
         printf("\033[A\033[KScoring %d neurons using %d data and %d parameters: Done\n", config->nw, config->n, config->p);
@@ -1222,6 +1277,7 @@ somScoreResult* getscore(dataVector* data, void* weights, somConfig* config, sho
 #pragma endregion
 
 #pragma region  Display Section
+// Get a terminal color code according to a class value
 int getTerminalColorCode(int index){
     if(index>=0)
     {
@@ -1245,7 +1301,7 @@ int getTerminalColorCode(int index){
     //default
     return 39;
 }
-
+// Get a terminal background color code according to a class value
 int getTerminalBGColorCode(int index){
     if(index>=0)
     {
@@ -1269,13 +1325,12 @@ int getTerminalBGColorCode(int index){
     //default
     return 49;
 }
-
+//Display the current SOM settings
 void displayConfig(somConfig* config)
 {
-    printf("SOM Settings:\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %.2f\n%21s: %.2f\n%s: %.f%%\n", "Entries", config->n,
+    printf("SOM Settings:\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %d\n%21s: %.2f\n%s: %.f%%\n", "Entries", config->n,
                         "Parameters", config->p, "Dimension", config->dimension, "Neurons", config->nw , "Radius", config->radius,
-                        "Learning rate", config->alpha, "Neighbours factor r1", config->nbFactorRadius1,
-                        "Neighborhood coverage", config->initialPercentCoverage *100);
+                        "Learning rate", config->alpha, "Neighborhood coverage", config->initialPercentCoverage *100);
     if(config->dimension == threeD)
     {
         printf("%21s: %d\n", "Map blocks", config->map_b);  
@@ -1287,7 +1342,7 @@ void displayConfig(somConfig* config)
     
     printf("%21s: %d\n\n", "Map columns", config->map_c); 
 }
-
+//Display score to the terminal using class color code and secondary class for background color code
 void displayScoreAtom(somScore* score)
 {
     somScore s =*score;
@@ -1310,7 +1365,7 @@ void displayScoreAtom(somScore* score)
     }
     printf("\033[0m ");
 }
-
+//Display scores for 1D SOM
 void displayScore1D(void* scores, somConfig* config)
 {
     somScore* score = (somScore*)scores;
@@ -1319,7 +1374,7 @@ void displayScore1D(void* scores, somConfig* config)
         displayScoreAtom(&score[i]);
     }
 }
-
+//Display scores for 2D SOM
 void displayScore2D(void* scores, somConfig* config)
 {
     somScore** score = (somScore**)scores;
@@ -1329,7 +1384,7 @@ void displayScore2D(void* scores, somConfig* config)
         printf("\n");
     }
 }
-
+//Display scores for 3D SOM
 void displayScore3D(void* scores, somConfig* config)
 {
     somScore*** score = (somScore***)scores;
@@ -1339,7 +1394,7 @@ void displayScore3D(void* scores, somConfig* config)
         displayScore2D(score[i], config);
     }
 }
-
+//Display scores for SOM weights
 void displayScore(somScoreResult* scoreResult, somConfig* config)
 {
     void (*displayScorefp)(void*, somConfig*);
@@ -1351,7 +1406,8 @@ void displayScore(somScoreResult* scoreResult, somConfig* config)
     }
     printf("SOM Map:\n");
     displayScorefp(scoreResult->scores, config);
-    printf("\nActivated nodes:%d\n\n", scoreResult->nActivatedNodes);
+    printf("\nActivated nodes:%d\n", scoreResult->nActivatedNodes);
+    printf("Confidence: %.2f%%\n\n", 100*scoreResult->confidence);
 }
 #pragma endregion
 
@@ -1368,8 +1424,6 @@ void writeNeuron(FILE* fp, somNeuron* n, somScore* score, long stepId, int p)
     int classtotalEntries = -1;
     int class2 = -1;
     int class2totalEntries = -1;
-    //TODO add stabilization handling (low cost)
-    int stabilized = 0;
     if(score)
     {
         s = score->totalEntries;
@@ -1441,10 +1495,10 @@ void writeNeurons(FILE *fp, void *weights, somConfig* config, long stepid, somSc
     }
     writefp(fp, weights, scoreResult ? scoreResult->scores : NULL, stepid,config);
 }
-
+//Write trained neuron. The location, class, confidence level and the neuron vector is serialized
 void saveNeuron(FILE* fp, somNeuron* n, int p)
 {
-    fprintf(fp, "%d;%d;%d;", n->b,n->r,n->c);
+    fprintf(fp, "%d;%d;%d;%d;%f", n->b,n->r,n->c, n->class, n->confidence);
     for(int i=0;i<p;i++){
         fprintf(fp, "%f", n->v[i]);
         if(i<p-1)
@@ -1517,20 +1571,19 @@ void writeSomHisto(char* filename, void* weights, somConfig* config, somScoreRes
     }
     fclose(fp);
 }
-
+//Serialize SOM settings
 void writeConfig(FILE *fp, somConfig* config)
 {
-    fprintf(fp, "%d;%d;%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%d;%ld\n", config->n, config->p, config->nw, config->dimension, config->map_b, config->map_r,config->map_c,
-                                    config->radius, config->alpha, config->sigma, config->initialPercentCoverage,
-                                    config->nbFactorRadius1, config->normalize, config->epochs);
+    fprintf(fp, "%d;%d;%d;%d;%d;%d;%d;%d;%f;%f;%f;%d;%ld\n", config->n, config->p, config->nw, config->dimension, config->map_b, config->map_r,config->map_c,
+                                    config->radius, config->alpha, config->sigma, config->initialPercentCoverage, config->normalize, config->epochs);
 }
-
+//Deserialize SOM settings
 void readConfig(char* line, somConfig* config)
 {
     char delim[]=";";
     char *ptr = strtok(line, delim);
     int column=0;
-    while(ptr != NULL && column < 14)
+    while(ptr != NULL && column < 13)
     {
         switch(column)
         {
@@ -1545,9 +1598,8 @@ void readConfig(char* line, somConfig* config)
             case 8: config->alpha = atof(ptr);break;
             case 9: config->sigma = atof(ptr);break;
             case 10: config->initialPercentCoverage = atof(ptr);break;
-            case 11: config->nbFactorRadius1 = atof(ptr);break;
-            case 12: config->normalize = (short)atoi(ptr);break;
-            case 13: config->epochs = atol(ptr);break;
+            case 11: config->normalize = (short)atoi(ptr);break;
+            case 12: config->epochs = atol(ptr);break;
         }
         ptr = strtok(NULL, delim);
         column++;
@@ -1557,7 +1609,7 @@ void readConfig(char* line, somConfig* config)
         free(ptr);
     }
 }
-
+//Deserialize trained SOM
 void readSom(FILE* fp, somNeuron* n, int p)
 {
     size_t len = 0;
@@ -1569,13 +1621,15 @@ void readSom(FILE* fp, somNeuron* n, int p)
     int column=0;
     n->neighbours = NULL;
     n->nc = 0;
-    while(ptr != NULL && column < 3)
+    while(ptr != NULL && column < 5)
     {
         switch(column)
         {
             case 0: n->b = atoi(ptr);break;
             case 1: n->r = atoi(ptr);break;
             case 2: n->c = atoi(ptr);break;
+            case 3: n->class = atoi(ptr);break;
+            case 4: n->confidence = atof(ptr);break;
         }
         ptr = strtok(NULL, delim);
         column++;
@@ -1597,7 +1651,7 @@ void readSom(FILE* fp, somNeuron* n, int p)
         free(line);
     }
 }
-
+//Deserialize 1D SOM
 void* readSom1D(FILE* fp, somConfig* config)
 {
     int p= config->p;
@@ -1608,7 +1662,7 @@ void* readSom1D(FILE* fp, somConfig* config)
     }
     return weights;
 }
-
+//Deserialize 2D SOM
 void* readSom2D(FILE* fp, somConfig* config)
 {
     somNeuron** weights = (somNeuron**)malloc(config->map_r*sizeof(somNeuron*));
@@ -1618,7 +1672,7 @@ void* readSom2D(FILE* fp, somConfig* config)
     }
     return weights;
 }
-
+//Deserialize 3D SOM
 void* readSom3D(FILE* fp, somConfig* config)
 {
     somNeuron*** weights = (somNeuron***)malloc(config->map_b*sizeof(somNeuron**));
@@ -1628,7 +1682,7 @@ void* readSom3D(FILE* fp, somConfig* config)
     }
     return weights;
 }
-
+//Serialize trained SOM with settings
 void saveSom(void* weights, somConfig* config, char* filename)
 {
     FILE * fp;
@@ -1640,7 +1694,7 @@ void saveSom(void* weights, somConfig* config, char* filename)
     }
     fclose(fp);
 }
-
+//Deserialize trained SOM and settings
 void* loadSom(char* filename, somConfig* config)
 {
     FILE * fp;

@@ -14,6 +14,10 @@ typedef struct somNeuron{
     int r;
     //column index (used in all dimensions)
     int c;
+    //known class (from score) for trained neurons (used for validation)
+    int class;
+    //percentage of confidence for the known class
+    double confidence;
 } somNeuron;
 
 // Defines a data vector
@@ -28,10 +32,6 @@ typedef struct dataVector{
     somNeuron* lastWinner;
 } dataVector;
 
-typedef struct neuronLocation{
-    int x;
-    int y;
-} neuronLocation;
 // Defines the dimension of map projection
 typedef enum mapDimension{
     defaultD = 0,
@@ -40,8 +40,11 @@ typedef enum mapDimension{
     threeD = 3
 } mapDimension;
 
+// Defines the neuron distribution strategy
 typedef enum initialDistribution{
+    //Will define random values around the mean of each paramter
     usingMeans = 0,
+    //Will define random values in the each parameter domain
     usingMinMax = 1
 } initialDistribution;
 
@@ -73,10 +76,10 @@ typedef struct somConfig{
     double initialPercentCoverage;
     // 1 if input data should be normalized, 0 otherwise -> 1 by default
     short normalize;
-    //Number of epochs (one epoch = learn with one input vector)
+    //Number of epochs (one epoch = learn with one input vector) -> 1 by default
     long epochs;
+    //The initializaztion strategy for weigts -> means by default
     initialDistribution distribution;
-    double nbFactorRadius1;
 } somConfig;
 
 // Define a value area

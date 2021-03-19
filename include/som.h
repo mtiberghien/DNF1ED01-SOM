@@ -29,7 +29,15 @@ typedef struct somScoreResult
     int nActivatedNodes;
     //score map (according to the dimension can be 1D, 2D or 2D map)
     void* scores;
+    //global mean of confidence for class prediction weighted by the percentage of activated nodes
+    double confidence;
 }somScoreResult;
+
+typedef struct somPrediction
+{
+    int class;
+    double confidence;
+}somPrediction;
 
 //Get default settings for SOM
 somConfig* getsomDefaultConfig();
@@ -54,3 +62,5 @@ void saveSom(void* weights, somConfig* config, char* filename);
 void* loadSom(char* filename, somConfig* config);
 //Train SOM weights with provided data and config
 void fit(dataVector* data, void* weights, somConfig* config, short silent);
+//Predict test data using trained weights
+somPrediction* predict(dataVector* data, void* weights, somConfig* config, short silent);
