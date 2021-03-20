@@ -23,7 +23,7 @@ void testIris()
 {
     somConfig *config = getsomDefaultConfig();
     config->alpha=0.05;
-    config->epochs = 2000;
+    config->epochs = 14;
     void* weights;
     dataVector* data = getIrisData(config);
     dataBoundary boundaries[config->p];

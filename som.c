@@ -19,6 +19,7 @@ somConfig* getsomDefaultConfig(){
     config->alpha = 0.01;
     config->initialPercentCoverage = 0.6;
     config->distribution = usingMeans;
+    config->epochs=0;
 }
 
 //Get a different file name according to each dimension (visualization purpose)
@@ -731,7 +732,7 @@ void* init(dataVector* data, somConfig* config, dataBoundary* boundaries, short 
     }
     if(!config->epochs)
     {
-        config->epochs = config->n*(1/config->alpha);
+        config->epochs = 1/config->alpha;
     }
     double (*getrandomfp)(dataBoundary);
     switch(config->distribution)
@@ -844,7 +845,8 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
         break;
     }
     somConfig cfg = *config;
-    double tauSigma = cfg.epochs/log(cfg.sigma);
+    double totalSteps = cfg.epochs*cfg.n;
+    double tauSigma = totalSteps/log(cfg.sigma);
     int vectorsToPropose[cfg.n];
     if(config->nw == 0)
     {
@@ -889,25 +891,27 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
         printf("Calculating  %dD SOM for %d neurons with %d entries and %d parameters :", config->dimension, config->nw, config->n, config->p);
         fflush(stdout);
     }
-    long epoch = 0;
+    long step = 0;
+    int epoch = 1;
     int currentRadius = cfg.radius;
-    double tau = cfg.epochs/log(currentRadius);
+    double tau = totalSteps/log(currentRadius);
     findwnfp = find_winner_fromNeighbours;
 #ifdef TRACE_SOM
     long time = 0;
     writeSomHisto(filename, weights, config, NULL);
 #endif
-    while(epoch<cfg.epochs)
+    while(epoch<=cfg.epochs)
     {
+        printf("epoch %3d of %3d: ", epoch, cfg.epochs);
         for(int i=cfg.n-1;i>=0;i--)
         {
             if(!silent)
             {
-                printf("%6.2f%%\033[7D", (double)epoch*100/cfg.epochs);
+                printf("%6.2f%%\033[7D", (double)(step%cfg.n)*100/cfg.n);
                 fflush(stdout);
             }
-            cfg.alpha = config->alpha*exp(-(double)epoch/cfg.epochs);
-            cfg.sigma = config->sigma*exp(-(double)epoch/tauSigma);
+            cfg.alpha = config->alpha*exp(-(double)step/totalSteps);
+            cfg.sigma = config->sigma*exp(-(double)step/tauSigma);
             int ivector = ((double)rand()/RAND_MAX)*i;
             int proposed = vectorsToPropose[ivector];
             learnfp(proposed,  &data[proposed], weights, &cfg, findwnfp);
@@ -921,14 +925,11 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
                     free(result);
                 }
 #endif  
-            epoch++;
-            if(epoch == cfg.epochs)
-            {
-                break;
-            }
-
+            step++;
         }
-        currentRadius = (int)(config->radius*exp(-epoch/tau));
+        printf("\033[18D");
+        epoch++;
+        currentRadius = (int)(config->radius*exp(-step/tau));
         if(currentRadius<cfg.radius)
         {
             cfg.radius = currentRadius;
@@ -944,7 +945,7 @@ void fit(dataVector* data, void* weights, somConfig* config, short silent)
     if(!silent)
     {
         {
-            printf("Done after %ld epochs\n", epoch);
+            printf("Done");
         }
     }  
 }
@@ -1574,7 +1575,7 @@ void writeSomHisto(char* filename, void* weights, somConfig* config, somScoreRes
 //Serialize SOM settings
 void writeConfig(FILE *fp, somConfig* config)
 {
-    fprintf(fp, "%d;%d;%d;%d;%d;%d;%d;%d;%f;%f;%f;%d;%ld\n", config->n, config->p, config->nw, config->dimension, config->map_b, config->map_r,config->map_c,
+    fprintf(fp, "%d;%d;%d;%d;%d;%d;%d;%d;%f;%f;%f;%d;%d\n", config->n, config->p, config->nw, config->dimension, config->map_b, config->map_r,config->map_c,
                                     config->radius, config->alpha, config->sigma, config->initialPercentCoverage, config->normalize, config->epochs);
 }
 //Deserialize SOM settings

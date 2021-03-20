@@ -76,8 +76,8 @@ typedef struct somConfig{
     double initialPercentCoverage;
     // 1 if input data should be normalized, 0 otherwise -> 1 by default
     short normalize;
-    //Number of epochs (one epoch = learn with one input vector) -> 1 by default
-    long epochs;
+    //Number of epochs (one epoch = learn with n vectors) -> if = 0 calculate as 1/alpha
+    int epochs;
     //The initializaztion strategy for weigts -> means by default
     initialDistribution distribution;
 } somConfig;
